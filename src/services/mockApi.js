@@ -31,7 +31,13 @@ export const mockApi = {
           id: 'dataproduct-1',
           type: 'dataproduct',
           position: { x: 350, y: 200 },
-          data: { label: 'Data Product' },
+          data: { label: 'Data Product 1' },
+        },
+        {
+          id: 'dataproduct-2',
+          type: 'dataproduct',
+          position: { x: 350, y: 400 },
+          data: { label: 'Data Product 2' },
         },
         {
           id: 'group-1',
@@ -53,6 +59,24 @@ export const mockApi = {
             ]
           },
         },
+        {
+          id: 'group-2',
+          type: 'group',
+          position: { x: 650, y: 350 },
+          data: { 
+            label: 'Output Ports 2',
+            children: [
+              { id: 'child-2-1', label: 'Reports API' },
+              { id: 'child-2-2', label: 'Dashboard' },
+              { id: 'child-2-3', label: 'ETL Pipeline' },
+              { id: 'child-2-4', label: 'Data Lake' },
+              { id: 'child-2-5', label: 'ML Model' },
+              { id: 'child-2-6', label: 'Streaming' },
+              { id: 'child-2-7', label: 'Warehouse' },
+              { id: 'child-2-8', label: 'Export' },
+            ]
+          },
+        },
       ],
       edges: [
         // Input edges (from input ports to dataproduct)
@@ -67,12 +91,36 @@ export const mockApi = {
             dataType: ['raw', 'events', 'api', 'file', 'stream', 'batch', 'webhook', 'iot'][i],
           }
         })),
-        // Output edges (from dataproduct to output ports)
+        // Output edges (from dataproduct-1 to output ports)
         ...Array.from({ length: 10 }, (_, i) => ({
           id: `edge-dataproduct-child-${i + 1}`,
           source: 'dataproduct-1',
           target: 'group-1',
           targetHandle: `child-${i + 1}`,
+          style: { stroke: '#9ca3af', strokeWidth: 1 },
+          data: {
+            connectionType: 'output',
+            bandwidth: Math.floor(Math.random() * 100) + 50,
+          }
+        })),
+        // Input edges (from input ports to dataproduct-2)
+        ...Array.from({ length: 4 }, (_, i) => ({
+          id: `edge-input-dataproduct2-${i + 1}`,
+          source: 'input-group-1',
+          sourceHandle: `input-${i + 5}`, // Use inputs 5-8 for dataproduct-2
+          target: 'dataproduct-2',
+          style: { stroke: '#9ca3af', strokeWidth: 1 },
+          data: {
+            connectionType: 'input',
+            dataType: ['stream', 'batch', 'webhook', 'iot'][i],
+          }
+        })),
+        // Output edges (from dataproduct-2 to output ports 2)
+        ...Array.from({ length: 8 }, (_, i) => ({
+          id: `edge-dataproduct2-child-${i + 1}`,
+          source: 'dataproduct-2',
+          target: 'group-2',
+          targetHandle: `child-2-${i + 1}`,
           style: { stroke: '#9ca3af', strokeWidth: 1 },
           data: {
             connectionType: 'output',

@@ -26,7 +26,7 @@ function FlowCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedChild, setSelectedChild] = useState(null);
   const [_selectedInput, setSelectedInput] = useState(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expandedNodes, setExpandedNodes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -86,28 +86,41 @@ function FlowCanvas() {
     );
   }, [setEdges, selectedChild]);
 
-  const handleToggleExpansion = useCallback(() => {
-    setExpanded(prev => !prev);
+  const handleToggleExpansion = useCallback((nodeId) => {
+    setExpandedNodes(prev => ({
+      ...prev,
+      [nodeId]: !prev[nodeId]
+    }));
   }, []);
 
   // Update nodes to pass the callbacks and filter based on expansion
   const nodesWithCallback = nodes
     .filter(node => {
-      // Hide input/output group nodes when not expanded
-      if ((node.type === 'group' || node.type === 'inputGroup') && !expanded) {
-        return false;
+      // Hide input/output group nodes when their corresponding dataproduct is not expanded
+      if (node.type === 'group') {
+        // group-1 corresponds to dataproduct-1, group-2 to dataproduct-2
+        const dataproductId = node.id === 'group-1' ? 'dataproduct-1' : 'dataproduct-2';
+        return expandedNodes[dataproductId];
+      }
+      if (node.type === 'inputGroup') {
+        // For now, inputGroup shows when any dataproduct is expanded
+        return Object.values(expandedNodes).some(expanded => expanded);
       }
       return true;
     })
     .map(node => {
       if (node.type === 'group') {
+        const dataproductId = node.id === 'group-1' ? 'dataproduct-1' : 'dataproduct-2';
+        const expanded = expandedNodes[dataproductId];
         return { ...node, data: { ...node.data, onChildSelect: handleChildSelect, expanded } };
       }
       if (node.type === 'inputGroup') {
+        const expanded = Object.values(expandedNodes).some(exp => exp);
         return { ...node, data: { ...node.data, onInputSelect: handleInputSelect, expanded } };
       }
       if (node.type === 'dataproduct') {
-        return { ...node, data: { ...node.data, onToggleExpansion: handleToggleExpansion, expanded } };
+        const expanded = expandedNodes[node.id];
+        return { ...node, data: { ...node.data, onToggleExpansion: () => handleToggleExpansion(node.id), expanded } };
       }
       return node;
     });
@@ -170,12 +183,28 @@ function FlowCanvas() {
   }
 
   // Filter edges to only show when nodes are visible
-  const visibleEdges = expanded ? edges : edges.filter(edge => {
-    // Only show edges that don't connect to hidden nodes
+  const visibleEdges = edges.filter(edge => {
     const sourceNode = nodes.find(n => n.id === edge.source);
     const targetNode = nodes.find(n => n.id === edge.target);
-    return !(sourceNode?.type === 'group' || sourceNode?.type === 'inputGroup' ||
-             targetNode?.type === 'group' || targetNode?.type === 'inputGroup');
+    
+    // Always show edges between dataproduct nodes (if any)
+    if (sourceNode?.type === 'dataproduct' && targetNode?.type === 'dataproduct') {
+      return true;
+    }
+    
+    // For group nodes, check if their corresponding dataproduct is expanded
+    if (targetNode?.type === 'group') {
+      const dataproductId = targetNode.id === 'group-1' ? 'dataproduct-1' : 'dataproduct-2';
+      return expandedNodes[dataproductId];
+    }
+    
+    // For inputGroup, show edges when any dataproduct is expanded
+    if (sourceNode?.type === 'inputGroup') {
+      return Object.values(expandedNodes).some(expanded => expanded);
+    }
+    
+    // Show all other edges (between visible nodes)
+    return true;
   });
 
   return (
