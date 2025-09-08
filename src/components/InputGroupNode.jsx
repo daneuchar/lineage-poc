@@ -76,7 +76,7 @@ function InputGroupNode({ data }) {
                 minHeight: isVisible ? '20px' : '0',
                 padding: isVisible ? '4px 8px' : '0 8px',
                 marginBottom: isVisible ? '4px' : '0',
-                overflow: 'hidden',
+              
                 transition: 'all 0.2s ease'
               }}
             >
