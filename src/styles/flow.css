@@ -1,0 +1,182 @@
+.dataproduct-node {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-width: 80px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.dataproduct-node .node-content h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dataproduct-node .node-content p {
+  display: none;
+}
+
+.child-node {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 6px 10px;
+  min-width: 60px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.child-node .node-content h4 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.child-node .node-content p {
+  display: none;
+}
+
+.group-node {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 3px;
+  min-width: 150px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #374151;
+  position: relative;
+}
+
+.group-header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.group-header h4 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.child-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.child-item {
+  position: relative;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 3px;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.child-item:hover {
+  background: #f3f4f6;
+}
+
+.child-item.selected {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.react-flow__handle {
+  width: 6px;
+  height: 6px;
+  border: 1px solid #9ca3af;
+  background: #f9fafb;
+}
+
+.react-flow__handle-connecting {
+  background: #6b7280;
+}
+
+.react-flow__handle-valid {
+  background: #6b7280;
+}
+
+.react-flow__minimap {
+  background-color: #f8fafc;
+}
+
+.react-flow__controls {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__controls-button {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px;
+}
+
+.react-flow__controls-button:hover {
+  background-color: #f1f5f9;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.react-flow__node-group {
+  padding: 0 !important;
+}
+
+.input-group-node {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 3px;
+  min-width: 150px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #374151;
+  position: relative;
+}
+
+.input-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-item {
+  position: relative;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 3px;
+  background: #f0fdf4;
+  border: 1px solid #d1fae5;
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.input-item:hover {
+  background: #dcfce7;
+}
+
+.input-item.selected {
+  background: #bbf7d0;
+  border-color: #10b981;
+  color: #047857;
+}
