@@ -1,8 +1,9 @@
 import { Handle, Position } from '@xyflow/react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 function GroupNode({ data }) {
   const [selectedChild, setSelectedChild] = useState(null);
+  const [showAll, setShowAll] = useState(false);
 
   const handleChildClick = (childIndex) => {
     const newSelected = selectedChild === childIndex ? null : childIndex;
@@ -14,6 +15,30 @@ function GroupNode({ data }) {
       data.onChildSelect(childId);
     }
   };
+
+  const handleViewMore = () => {
+    setShowAll(prev => !prev);
+  };
+
+  const lastVisibleHandlesRef = useRef([]);
+
+  // Report visible handles to parent
+  useEffect(() => {
+    if (data.onVisibleHandlesChange && data.children) {
+      const visibleHandleIds = data.children
+        .filter((_, i) => showAll || i < 3)
+        .map(child => child.id);
+      
+      // Only call if handles actually changed
+      const handleIdsStr = visibleHandleIds.join(',');
+      const lastHandleIdsStr = lastVisibleHandlesRef.current.join(',');
+      
+      if (handleIdsStr !== lastHandleIdsStr) {
+        lastVisibleHandlesRef.current = visibleHandleIds;
+        data.onVisibleHandlesChange(visibleHandleIds);
+      }
+    }
+  }, [showAll]);
 
   if (!data.expanded) {
     return (
@@ -28,43 +53,70 @@ function GroupNode({ data }) {
     );
   }
 
+  const children = data.children || [];
+  const visibleChildren = showAll ? children : children.slice(0, 3);
+  const hasMore = children.length > 3;
+
   return (
     <div className="group-node">
       <div className="group-header">
         <h4>Output Ports</h4>
       </div>
       <div className="child-items">
-        {(data.children || []).map((child, i) => (
+        {children.map((child, i) => {
+          const isVisible = showAll || i < 3;
+          const isSelected = selectedChild === i;
+          return (
+            <div 
+              key={child.id} 
+              className={`child-item ${isSelected ? 'selected' : ''}`}
+              onClick={() => handleChildClick(i)}
+              style={{ 
+                opacity: isVisible ? 1 : 0,
+                height: isVisible ? 'auto' : '0',
+                minHeight: isVisible ? '20px' : '0',
+                padding: isVisible ? '4px 8px' : '0 8px',
+                marginBottom: isVisible ? '4px' : '0',
+                
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Handle 
+                type="target" 
+                position={Position.Left} 
+                id={child.id}
+                style={{ 
+                  position: 'absolute',
+                  left: '-5px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  opacity: isVisible ? 1 : 0
+                }}
+              />
+              <Handle 
+                type="source" 
+                position={Position.Right} 
+                id={child.id}
+                style={{ 
+                  position: 'absolute',
+                  right: '-5px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  opacity: isVisible ? 1 : 0
+                }}
+              />
+              <span>{child.label}</span>
+            </div>
+          );
+        })}
+        {hasMore && (
           <div 
-            key={child.id} 
-            className={`child-item ${selectedChild === i ? 'selected' : ''}`}
-            onClick={() => handleChildClick(i)}
+            className="view-more-button"
+            onClick={handleViewMore}
           >
-            <Handle 
-              type="target" 
-              position={Position.Left} 
-              id={child.id}
-              style={{ 
-                position: 'absolute',
-                left: '-5px',
-                top: '50%',
-                transform: 'translateY(-50%)'
-              }}
-            />
-            <Handle 
-              type="source" 
-              position={Position.Right} 
-              id={child.id}
-              style={{ 
-                position: 'absolute',
-                right: '-5px',
-                top: '50%',
-                transform: 'translateY(-50%)'
-              }}
-            />
-            <span>{child.label}</span>
+            {showAll ? '▲ View Less' : `▼ View More (${children.length - 3})`}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

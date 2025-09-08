@@ -67,12 +67,10 @@
 .child-items {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .child-item {
   position: relative;
-  padding: 4px 8px;
   font-size: 11px;
   font-weight: 500;
   border-radius: 3px;
@@ -80,9 +78,7 @@
   border: 1px solid #f3f4f6;
   display: flex;
   align-items: center;
-  min-height: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .child-item:hover {
@@ -154,12 +150,10 @@
 .input-items {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .input-item {
   position: relative;
-  padding: 4px 8px;
   font-size: 11px;
   font-weight: 500;
   border-radius: 3px;
@@ -167,9 +161,7 @@
   border: 1px solid #d1fae5;
   display: flex;
   align-items: center;
-  min-height: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .input-item:hover {
@@ -180,4 +172,25 @@
   background: #bbf7d0;
   border-color: #10b981;
   color: #047857;
+}
+
+.view-more-button {
+  padding: 6px 12px;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.view-more-button:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #4b5563;
 }
