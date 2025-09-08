@@ -30,6 +30,61 @@ function FlowCanvas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Dynamic layout function
+  const calculateDynamicLayout = useCallback((nodes, expandedNodes) => {
+    const LAYER_SPACING = 300;
+    const BASE_Y = 200;
+    
+    return nodes.map(node => {
+      let newPosition = { ...node.position };
+      
+      // Layer 1: Input Group (always leftmost)
+      if (node.type === 'inputGroup') {
+        newPosition = { x: 50, y: BASE_Y };
+      }
+      
+      // Layer 2: Data Product 1
+      else if (node.type === 'dataproduct' && node.id === 'dataproduct-1') {
+        newPosition = { 
+          x: 50 + LAYER_SPACING, 
+          y: BASE_Y 
+        };
+      }
+      
+      // Layer 3: Data Product 2 (to the right of DP1)
+      else if (node.type === 'dataproduct' && node.id === 'dataproduct-2') {
+        newPosition = { 
+          x: 50 + (LAYER_SPACING * 2), 
+          y: BASE_Y 
+        };
+      }
+      
+      // Layer 4: Output Group 1 (between DP1 and DP2)
+      else if (node.type === 'group' && node.id === 'group-1') {
+        const isExpanded = expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
+        if (isExpanded) {
+          newPosition = { 
+            x: 50 + LAYER_SPACING + 150, // Between DP1 and DP2
+            y: BASE_Y - 120 
+          };
+        }
+      }
+      
+      // Layer 5: Output Group 2 (right of DP2)
+      else if (node.type === 'group' && node.id === 'group-2') {
+        const isExpanded = expandedNodes['dataproduct-2'];
+        if (isExpanded) {
+          newPosition = { 
+            x: 50 + (LAYER_SPACING * 3), 
+            y: BASE_Y 
+          };
+        }
+      }
+      
+      return { ...node, position: newPosition };
+    });
+  }, []);
+
   // Load data from mock API
   useEffect(() => {
     const loadFlowData = async () => {
@@ -37,7 +92,8 @@ function FlowCanvas() {
         setLoading(true);
         setError(null);
         const data = await mockApi.getFlowData();
-        setNodes(data.nodes);
+        const layoutNodes = calculateDynamicLayout(data.nodes, {});
+        setNodes(layoutNodes);
         setEdges(data.edges);
       } catch (err) {
         setError(err.message);
@@ -47,7 +103,7 @@ function FlowCanvas() {
     };
 
     loadFlowData();
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, calculateDynamicLayout]);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -93,18 +149,27 @@ function FlowCanvas() {
     }));
   }, []);
 
+  // Update layout when expansion state changes
+  useEffect(() => {
+    setNodes(currentNodes => calculateDynamicLayout(currentNodes, expandedNodes));
+  }, [expandedNodes, calculateDynamicLayout, setNodes]);
+
   // Update nodes to pass the callbacks and filter based on expansion
   const nodesWithCallback = nodes
     .filter(node => {
       // Hide input/output group nodes when their corresponding dataproduct is not expanded
       if (node.type === 'group') {
-        // group-1 corresponds to dataproduct-1, group-2 to dataproduct-2
-        const dataproductId = node.id === 'group-1' ? 'dataproduct-1' : 'dataproduct-2';
-        return expandedNodes[dataproductId];
+        if (node.id === 'group-1') {
+          // group-1 shows when DP1 is expanded OR when DP2 is expanded (since DP2 needs DP1 outputs)
+          return expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
+        } else if (node.id === 'group-2') {
+          // group-2 only shows when DP2 is expanded
+          return expandedNodes['dataproduct-2'];
+        }
       }
       if (node.type === 'inputGroup') {
-        // For now, inputGroup shows when any dataproduct is expanded
-        return Object.values(expandedNodes).some(expanded => expanded);
+        // inputGroup only shows when DP1 is expanded (since it feeds into DP1)
+        return expandedNodes['dataproduct-1'];
       }
       return true;
     })
@@ -192,15 +257,29 @@ function FlowCanvas() {
       return true;
     }
     
-    // For group nodes, check if their corresponding dataproduct is expanded
-    if (targetNode?.type === 'group') {
-      const dataproductId = targetNode.id === 'group-1' ? 'dataproduct-1' : 'dataproduct-2';
-      return expandedNodes[dataproductId];
+    // For edges FROM group nodes TO dataproduct nodes
+    if (sourceNode?.type === 'group' && targetNode?.type === 'dataproduct') {
+      // Show edges from group-1 to dataproduct-2 when either DP1 or DP2 is expanded
+      if (sourceNode.id === 'group-1' && targetNode.id === 'dataproduct-2') {
+        return expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
+      }
+      return false;
     }
     
-    // For inputGroup, show edges when any dataproduct is expanded
+    // For edges TO group nodes, check if their corresponding dataproduct is expanded
+    if (targetNode?.type === 'group') {
+      if (targetNode.id === 'group-1') {
+        // Show edges to group-1 when DP1 or DP2 is expanded
+        return expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
+      } else if (targetNode.id === 'group-2') {
+        // Show edges to group-2 only when DP2 is expanded
+        return expandedNodes['dataproduct-2'];
+      }
+    }
+    
+    // For inputGroup, show edges only when DP1 is expanded
     if (sourceNode?.type === 'inputGroup') {
-      return Object.values(expandedNodes).some(expanded => expanded);
+      return expandedNodes['dataproduct-1'];
     }
     
     // Show all other edges (between visible nodes)
@@ -217,6 +296,15 @@ function FlowCanvas() {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         fitView
+        fitViewOptions={{ 
+          padding: 0.2,
+          includeHiddenNodes: false,
+          duration: 800
+        }}
+        defaultEdgeOptions={{
+          animated: false,
+          style: { strokeWidth: 2 }
+        }}
       >
         <Controls />
         <MiniMap />

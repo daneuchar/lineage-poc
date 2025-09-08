@@ -51,6 +51,17 @@ function GroupNode({ data }) {
                 transform: 'translateY(-50%)'
               }}
             />
+            <Handle 
+              type="source" 
+              position={Position.Right} 
+              id={child.id}
+              style={{ 
+                position: 'absolute',
+                right: '-5px',
+                top: '50%',
+                transform: 'translateY(-50%)'
+              }}
+            />
             <span>{child.label}</span>
           </div>
         ))}

@@ -103,16 +103,16 @@ export const mockApi = {
             bandwidth: Math.floor(Math.random() * 100) + 50,
           }
         })),
-        // Input edges (from input ports to dataproduct-2)
+        // Input edges (from DP1 output ports to dataproduct-2)
         ...Array.from({ length: 4 }, (_, i) => ({
-          id: `edge-input-dataproduct2-${i + 1}`,
-          source: 'input-group-1',
-          sourceHandle: `input-${i + 5}`, // Use inputs 5-8 for dataproduct-2
+          id: `edge-dp1-output-to-dp2-${i + 1}`,
+          source: 'group-1',
+          sourceHandle: `child-${i + 1}`, // Use first 4 outputs from DP1
           target: 'dataproduct-2',
           style: { stroke: '#9ca3af', strokeWidth: 1 },
           data: {
-            connectionType: 'input',
-            dataType: ['stream', 'batch', 'webhook', 'iot'][i],
+            connectionType: 'dp1-to-dp2',
+            dataType: ['web-data', 'mobile-data', 'desktop-data', 'api-data'][i],
           }
         })),
         // Output edges (from dataproduct-2 to output ports 2)
