@@ -12,7 +12,6 @@ export const mockApi = {
         {
           id: 'input-group-1',
           type: 'inputGroup',
-          position: { x: 50, y: 50 },
           data: { 
             label: 'Input Sources',
             inputs: [
@@ -30,19 +29,16 @@ export const mockApi = {
         {
           id: 'dataproduct-1',
           type: 'dataproduct',
-          position: { x: 350, y: 200 },
           data: { label: 'Data Product 1' },
         },
         {
           id: 'dataproduct-2',
           type: 'dataproduct',
-          position: { x: 350, y: 400 },
           data: { label: 'Data Product 2' },
         },
         {
           id: 'group-1',
           type: 'group',
-          position: { x: 650, y: 50 },
           data: { 
             label: 'Output Ports',
             children: [
@@ -62,7 +58,6 @@ export const mockApi = {
         {
           id: 'group-2',
           type: 'group',
-          position: { x: 650, y: 350 },
           data: { 
             label: 'Output Ports 2',
             children: [

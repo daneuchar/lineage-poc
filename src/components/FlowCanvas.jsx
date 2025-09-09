@@ -7,6 +7,7 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -14,6 +15,7 @@ import DataProductNode from './DataProductNode';
 import GroupNode from './GroupNode';
 import InputGroupNode from './InputGroupNode';
 import { mockApi } from '../services/mockApi';
+import { getLayoutedNodes } from '../utils/layoutUtils';
 
 const nodeTypes = {
   dataproduct: DataProductNode,
@@ -22,6 +24,7 @@ const nodeTypes = {
 };
 
 function FlowCanvas() {
+  const { fitView, getNode } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -32,59 +35,9 @@ function FlowCanvas() {
   const [error, setError] = useState(null);
   const originalEdgesRef = useRef([]);
 
-  // Dynamic layout function
-  const calculateDynamicLayout = useCallback((nodes, expandedNodes) => {
-    const LAYER_SPACING = 300;
-    const BASE_Y = 200;
-    
-    return nodes.map(node => {
-      let newPosition = { ...node.position };
-      
-      // Layer 1: Input Group (always leftmost)
-      if (node.type === 'inputGroup') {
-        newPosition = { x: 50, y: BASE_Y };
-      }
-      
-      // Layer 2: Data Product 1
-      else if (node.type === 'dataproduct' && node.id === 'dataproduct-1') {
-        newPosition = { 
-          x: 50 + LAYER_SPACING, 
-          y: BASE_Y 
-        };
-      }
-      
-      // Layer 3: Data Product 2 (to the right of DP1)
-      else if (node.type === 'dataproduct' && node.id === 'dataproduct-2') {
-        newPosition = { 
-          x: 50 + (LAYER_SPACING * 2), 
-          y: BASE_Y 
-        };
-      }
-      
-      // Layer 4: Output Group 1 (between DP1 and DP2)
-      else if (node.type === 'group' && node.id === 'group-1') {
-        const isExpanded = expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
-        if (isExpanded) {
-          newPosition = { 
-            x: 50 + LAYER_SPACING + 150, // Between DP1 and DP2
-            y: BASE_Y - 120 
-          };
-        }
-      }
-      
-      // Layer 5: Output Group 2 (right of DP2)
-      else if (node.type === 'group' && node.id === 'group-2') {
-        const isExpanded = expandedNodes['dataproduct-2'];
-        if (isExpanded) {
-          newPosition = { 
-            x: 50 + (LAYER_SPACING * 3), 
-            y: BASE_Y 
-          };
-        }
-      }
-      
-      return { ...node, position: newPosition };
-    });
+  // Calculate layout using Dagre
+  const calculateDagreLayout = useCallback((nodes, edges, expandedNodes) => {
+    return getLayoutedNodes(nodes, edges, expandedNodes);
   }, []);
 
   // Load data from mock API
@@ -94,9 +47,16 @@ function FlowCanvas() {
         setLoading(true);
         setError(null);
         const data = await mockApi.getFlowData();
-        const layoutNodes = calculateDynamicLayout(data.nodes, {});
-        setNodes(layoutNodes);
         originalEdgesRef.current = data.edges;
+        
+        // Add default positions for initial load (Dagre will override these)
+        const nodesWithDefaultPositions = data.nodes.map(node => ({
+          ...node,
+          position: { x: 0, y: 0 }
+        }));
+        
+        const layoutNodes = calculateDagreLayout(nodesWithDefaultPositions, data.edges, {});
+        setNodes(layoutNodes);
         setEdges(data.edges);
       } catch (err) {
         setError(err.message);
@@ -106,7 +66,7 @@ function FlowCanvas() {
     };
 
     loadFlowData();
-  }, [setNodes, setEdges, calculateDynamicLayout]);
+  }, [setNodes, setEdges, calculateDagreLayout]);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -146,11 +106,31 @@ function FlowCanvas() {
   }, [setEdges, selectedChild]);
 
   const handleToggleExpansion = useCallback((nodeId) => {
-    setExpandedNodes(prev => ({
-      ...prev,
-      [nodeId]: !prev[nodeId]
-    }));
-  }, []);
+    console.log('Toggling expansion for:', nodeId);
+    setExpandedNodes(prev => {
+      const newState = {
+        ...prev,
+        [nodeId]: !prev[nodeId]
+      };
+      console.log('New expanded state:', newState);
+      
+      // Center on the node after expansion with a slight delay
+      setTimeout(() => {
+        const node = getNode(nodeId);
+        if (node) {
+          fitView({
+            nodes: [node],
+            duration: 800,
+            padding: 0.3,
+            minZoom: 0.8,
+            maxZoom: 1.2
+          });
+        }
+      }, 100);
+      
+      return newState;
+    });
+  }, [fitView, getNode]);
 
   const handleVisibleHandlesChange = useCallback((nodeId, handles) => {
     setVisibleHandles(prev => ({
@@ -161,8 +141,14 @@ function FlowCanvas() {
 
   // Update layout when expansion state changes
   useEffect(() => {
-    setNodes(currentNodes => calculateDynamicLayout(currentNodes, expandedNodes));
-  }, [expandedNodes, calculateDynamicLayout, setNodes]);
+    console.log('Layout effect triggered, expandedNodes:', expandedNodes);
+    if (originalEdgesRef.current.length > 0) {
+      setNodes(currentNodes => {
+        console.log('Recalculating layout with nodes:', currentNodes.length);
+        return calculateDagreLayout(currentNodes, originalEdgesRef.current, expandedNodes);
+      });
+    }
+  }, [expandedNodes, calculateDagreLayout, setNodes]);
 
   // Filter and style edges based on node expansion and handle visibility
   const visibleEdges = originalEdgesRef.current
