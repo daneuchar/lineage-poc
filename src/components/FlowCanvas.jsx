@@ -108,10 +108,23 @@ function FlowCanvas() {
   const handleToggleExpansion = useCallback((nodeId) => {
     console.log('Toggling expansion for:', nodeId);
     setExpandedNodes(prev => {
-      const newState = {
-        ...prev,
-        [nodeId]: !prev[nodeId]
-      };
+      const newState = { ...prev };
+      
+      // Toggle the clicked node
+      newState[nodeId] = !prev[nodeId];
+      
+      // Smart expansion logic: if expanding DP2, also expand DP1 (since DP2 depends on DP1 outputs)
+      if (nodeId === 'dataproduct-2' && newState['dataproduct-2']) {
+        newState['dataproduct-1'] = true;
+        console.log('Auto-expanding DP1 because DP2 needs DP1 outputs');
+      }
+      
+      // If collapsing DP1 while DP2 is expanded, also collapse DP2 (since DP2 needs DP1)
+      if (nodeId === 'dataproduct-1' && !newState['dataproduct-1'] && prev['dataproduct-2']) {
+        newState['dataproduct-2'] = false;
+        console.log('Auto-collapsing DP2 because DP1 is collapsing');
+      }
+      
       console.log('New expanded state:', newState);
       
       // Center on the node after expansion with a slight delay
@@ -147,90 +160,24 @@ function FlowCanvas() {
         console.log('Recalculating layout with nodes:', currentNodes.length);
         return calculateDagreLayout(currentNodes, originalEdgesRef.current, expandedNodes);
       });
+      
     }
   }, [expandedNodes, calculateDagreLayout, setNodes]);
 
-  // Filter and style edges based on node expansion and handle visibility
-  const visibleEdges = originalEdgesRef.current
-    .filter(edge => {
-      const sourceNode = nodes.find(n => n.id === edge.source);
-      const targetNode = nodes.find(n => n.id === edge.target);
-      
-      // For inputGroup, show edges only when DP1 is expanded
-      if (sourceNode?.type === 'inputGroup') {
-        return expandedNodes['dataproduct-1'];
-      }
-      
-      // For edges FROM group nodes TO dataproduct nodes
-      if (sourceNode?.type === 'group' && targetNode?.type === 'dataproduct') {
-        if (sourceNode.id === 'group-1' && targetNode.id === 'dataproduct-2') {
-          return expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
-        }
-        return false;
-      }
-      
-      // For edges TO group nodes, check expansion
-      if (targetNode?.type === 'group') {
-        if (targetNode.id === 'group-1') {
-          return expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
-        } else if (targetNode.id === 'group-2') {
-          return expandedNodes['dataproduct-2'];
-        }
-      }
-      
-      // Always show edges between dataproduct nodes
-      if (sourceNode?.type === 'dataproduct' && targetNode?.type === 'dataproduct') {
-        return true;
-      }
-      
-      return true;
-    })
-    .map(edge => {
-      // Check if handles are visible for this edge
-      const sourceNode = nodes.find(n => n.id === edge.source);
-      const targetNode = nodes.find(n => n.id === edge.target);
-      
-      let isSourceHandleVisible = true;
-      let isTargetHandleVisible = true;
-      
-      // Check source handle visibility
-      if (sourceNode && visibleHandles[sourceNode.id]) {
-        isSourceHandleVisible = visibleHandles[sourceNode.id].includes(edge.sourceHandle);
-      }
-      
-      // Check target handle visibility  
-      if (targetNode && visibleHandles[targetNode.id]) {
-        isTargetHandleVisible = visibleHandles[targetNode.id].includes(edge.targetHandle);
-      }
-      
-      // Hide edge if either handle is not visible
-      const shouldShowEdge = isSourceHandleVisible && isTargetHandleVisible;
-      
-      return {
-        ...edge,
-        style: {
-          ...edge.style,
-          opacity: shouldShowEdge ? 1 : 0,
-          transition: 'opacity 0.2s ease'
-        }
-      };
-    });
 
-  // Update nodes to pass the callbacks and filter based on expansion
+  // Filter nodes based on expansion state and add callbacks
   const nodesWithCallback = nodes
     .filter(node => {
       // Hide input/output group nodes when their corresponding dataproduct is not expanded
       if (node.type === 'group') {
         if (node.id === 'group-1') {
-          // group-1 shows when DP1 is expanded OR when DP2 is expanded (since DP2 needs DP1 outputs)
-          return expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2'];
+          // group-1 shows when DP1 is expanded (now DP2 expansion will auto-expand DP1)
+          return expandedNodes['dataproduct-1'];
         } else if (node.id === 'group-2') {
-          // group-2 only shows when DP2 is expanded
           return expandedNodes['dataproduct-2'];
         }
       }
       if (node.type === 'inputGroup') {
-        // inputGroup only shows when DP1 is expanded (since it feeds into DP1)
         return expandedNodes['dataproduct-1'];
       }
       return true;
@@ -267,6 +214,43 @@ function FlowCanvas() {
       }
       return node;
     });
+
+  // Filter edges to only show when nodes are expanded and handles exist
+  const filteredEdges = originalEdgesRef.current.filter(edge => {
+    const sourceNode = nodesWithCallback.find(n => n.id === edge.source);
+    const targetNode = nodesWithCallback.find(n => n.id === edge.target);
+    
+    // Only include edges if both nodes exist in the filtered node list
+    if (!sourceNode || !targetNode) {
+      return false;
+    }
+    
+    // For inputGroup edges, only show when DP1 is expanded
+    if (sourceNode.type === 'inputGroup') {
+      return expandedNodes['dataproduct-1'];
+    }
+    
+    // For edges FROM dataproduct TO group nodes
+    if (sourceNode.type === 'dataproduct' && targetNode.type === 'group') {
+      if (sourceNode.id === 'dataproduct-1' && targetNode.id === 'group-1') {
+        return expandedNodes['dataproduct-1'];
+      }
+      if (sourceNode.id === 'dataproduct-2' && targetNode.id === 'group-2') {
+        return expandedNodes['dataproduct-2'];
+      }
+      return false;
+    }
+    
+    // For edges FROM group nodes TO dataproduct nodes (DP1 → DP2)
+    if (sourceNode.type === 'group' && targetNode.type === 'dataproduct') {
+      if (sourceNode.id === 'group-1' && targetNode.id === 'dataproduct-2') {
+        return expandedNodes['dataproduct-1'];
+      }
+      return false;
+    }
+    
+    return false;
+  });
 
   if (loading) {
     return (
@@ -330,7 +314,7 @@ function FlowCanvas() {
     <div style={{ width: '100vw', height: '100vh' }}>
       <ReactFlow
         nodes={nodesWithCallback}
-        edges={visibleEdges}
+        edges={filteredEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
