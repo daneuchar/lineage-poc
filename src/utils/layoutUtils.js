@@ -68,7 +68,12 @@ const getNodeWidth = (node, expandedNodes) => {
     case 'dataproduct':
       return 120;
     case 'inputGroup':
-      return expandedNodes['dataproduct-1'] ? 180 : 150;
+      if (node.id === 'input-group-1') {
+        return expandedNodes['dataproduct-1'] ? 180 : 150;
+      } else if (node.id === 'input-group-2') {
+        return expandedNodes['dataproduct-2'] ? 180 : 150;
+      }
+      return 150;
     case 'group':
       if (node.id === 'group-1') {
         return (expandedNodes['dataproduct-1'] || expandedNodes['dataproduct-2']) ? 180 : 150;
@@ -89,7 +94,16 @@ const getNodeHeight = (node, expandedNodes) => {
     case 'dataproduct':
       return 80;
     case 'inputGroup':
-      if (!expandedNodes['dataproduct-1']) return 60;
+      let isInputExpanded = false;
+      if (node.id === 'input-group-1') {
+        isInputExpanded = expandedNodes['dataproduct-1'];
+      } else if (node.id === 'input-group-2') {
+        isInputExpanded = expandedNodes['dataproduct-2'];
+      } else {
+        isInputExpanded = expandedNodes['dataproduct-1']; // fallback
+      }
+      
+      if (!isInputExpanded) return 60;
       // Calculate height based on visible items (3 items + header + view more button if needed)
       const inputCount = node.data?.inputs?.length || 0;
       const visibleInputs = Math.min(3, inputCount);

@@ -56,6 +56,19 @@ export const mockApi = {
           },
         },
         {
+          id: 'input-group-2',
+          type: 'inputGroup',
+          data: { 
+            label: 'Input Ports 2',
+            inputs: [
+              { id: 'input-2-1', label: 'Web Data (from DP1)' },
+              { id: 'input-2-2', label: 'Mobile Data (from DP1)' },
+              { id: 'input-2-3', label: 'Desktop Data (from DP1)' },
+              { id: 'input-2-4', label: 'API Data (from DP1)' },
+            ]
+          },
+        },
+        {
           id: 'group-2',
           type: 'group',
           data: { 
@@ -98,15 +111,28 @@ export const mockApi = {
             bandwidth: Math.floor(Math.random() * 100) + 50,
           }
         })),
-        // Input edges (from DP1 output ports to dataproduct-2)
+        // Input edges (from DP1 output ports to DP2 input ports)
         ...Array.from({ length: 4 }, (_, i) => ({
-          id: `edge-dp1-output-to-dp2-${i + 1}`,
+          id: `edge-dp1-output-to-dp2-input-${i + 1}`,
           source: 'group-1',
           sourceHandle: `child-${i + 1}`, // Use first 4 outputs from DP1
+          target: 'input-group-2',
+          targetHandle: `input-2-${i + 1}`,
+          style: { stroke: '#9ca3af', strokeWidth: 1 },
+          data: {
+            connectionType: 'dp1-to-dp2-input',
+            dataType: ['web-data', 'mobile-data', 'desktop-data', 'api-data'][i],
+          }
+        })),
+        // Input edges (from DP2 input ports to dataproduct-2)
+        ...Array.from({ length: 4 }, (_, i) => ({
+          id: `edge-dp2-input-to-dp2-${i + 1}`,
+          source: 'input-group-2',
+          sourceHandle: `input-2-${i + 1}`,
           target: 'dataproduct-2',
           style: { stroke: '#9ca3af', strokeWidth: 1 },
           data: {
-            connectionType: 'dp1-to-dp2',
+            connectionType: 'input-to-dp2',
             dataType: ['web-data', 'mobile-data', 'desktop-data', 'api-data'][i],
           }
         })),

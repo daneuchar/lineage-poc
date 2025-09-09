@@ -81,6 +81,20 @@ function InputGroupNode({ data }) {
               }}
             >
               <span>{input.label}</span>
+              {/* Target handle for incoming edges from DP1 outputs */}
+              <Handle 
+                type="target" 
+                position={Position.Left} 
+                id={input.id}
+                style={{ 
+                  position: 'absolute',
+                  left: '-5px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  opacity: isVisible ? 1 : 0
+                }}
+              />
+              {/* Source handle for outgoing edges to DP2 */}
               <Handle 
                 type="source" 
                 position={Position.Right} 

@@ -113,16 +113,34 @@ function FlowCanvas() {
       // Toggle the clicked node
       newState[nodeId] = !prev[nodeId];
       
-      // Smart expansion logic: if expanding DP2, also expand DP1 (since DP2 depends on DP1 outputs)
+      // Smart expansion logic: if expanding DP2, also expand DP1 only if there are connecting edges
       if (nodeId === 'dataproduct-2' && newState['dataproduct-2']) {
-        newState['dataproduct-1'] = true;
-        console.log('Auto-expanding DP1 because DP2 needs DP1 outputs');
+        // Check if DP2 has input connections from DP1 outputs
+        const hasDP1ToDP2Connection = originalEdgesRef.current.some(edge => 
+          edge.source === 'group-1' && edge.target === 'input-group-2'
+        );
+        
+        if (hasDP1ToDP2Connection) {
+          newState['dataproduct-1'] = true;
+          console.log('Auto-expanding DP1 because DP2 needs DP1 outputs (edges exist)');
+        } else {
+          console.log('Not auto-expanding DP1 - no connecting edges found');
+        }
       }
       
-      // If collapsing DP1 while DP2 is expanded, also collapse DP2 (since DP2 needs DP1)
+      // If collapsing DP1 while DP2 is expanded, also collapse DP2 only if there are connecting edges
       if (nodeId === 'dataproduct-1' && !newState['dataproduct-1'] && prev['dataproduct-2']) {
-        newState['dataproduct-2'] = false;
-        console.log('Auto-collapsing DP2 because DP1 is collapsing');
+        // Check if DP2 depends on DP1 outputs
+        const hasDP1ToDP2Connection = originalEdgesRef.current.some(edge => 
+          edge.source === 'group-1' && edge.target === 'input-group-2'
+        );
+        
+        if (hasDP1ToDP2Connection) {
+          newState['dataproduct-2'] = false;
+          console.log('Auto-collapsing DP2 because DP1 is collapsing (connected via edges)');
+        } else {
+          console.log('Not auto-collapsing DP2 - no dependency edges found');
+        }
       }
       
       console.log('New expanded state:', newState);
@@ -165,20 +183,39 @@ function FlowCanvas() {
   }, [expandedNodes, calculateDagreLayout, setNodes]);
 
 
-  // Filter nodes based on expansion state and add callbacks
+  // Helper function to check if edges exist between two nodes
+  const hasConnectingEdges = (sourceNodeId, targetNodeId) => {
+    return originalEdgesRef.current.some(edge => 
+      edge.source === sourceNodeId && edge.target === targetNodeId
+    );
+  };
+
+  // Filter nodes based on expansion state and edge connectivity
   const nodesWithCallback = nodes
     .filter(node => {
       // Hide input/output group nodes when their corresponding dataproduct is not expanded
+      // AND only show them if there are connecting edges
       if (node.type === 'group') {
         if (node.id === 'group-1') {
-          // group-1 shows when DP1 is expanded (now DP2 expansion will auto-expand DP1)
-          return expandedNodes['dataproduct-1'];
+          // group-1 shows when DP1 is expanded AND there are edges from DP1 to group-1
+          return expandedNodes['dataproduct-1'] && hasConnectingEdges('dataproduct-1', 'group-1');
         } else if (node.id === 'group-2') {
-          return expandedNodes['dataproduct-2'];
+          // group-2 shows when DP2 is expanded AND there are edges from DP2 to group-2
+          return expandedNodes['dataproduct-2'] && hasConnectingEdges('dataproduct-2', 'group-2');
         }
       }
       if (node.type === 'inputGroup') {
-        return expandedNodes['dataproduct-1'];
+        if (node.id === 'input-group-1') {
+          // input-group-1 shows when DP1 is expanded AND there are edges from input-group-1 to DP1
+          return expandedNodes['dataproduct-1'] && hasConnectingEdges('input-group-1', 'dataproduct-1');
+        } else if (node.id === 'input-group-2') {
+          // input-group-2 shows when DP2 is expanded AND there are edges connecting DP1 outputs to DP2 inputs
+          // Check if there are edges from group-1 to input-group-2 AND from input-group-2 to dataproduct-2
+          const hasInputConnection = hasConnectingEdges('group-1', 'input-group-2') && 
+                                   hasConnectingEdges('input-group-2', 'dataproduct-2');
+          return expandedNodes['dataproduct-2'] && hasInputConnection;
+        }
+        return expandedNodes['dataproduct-1']; // fallback
       }
       return true;
     })
@@ -197,7 +234,14 @@ function FlowCanvas() {
         };
       }
       if (node.type === 'inputGroup') {
-        const expanded = Object.values(expandedNodes).some(exp => exp);
+        let expanded;
+        if (node.id === 'input-group-1') {
+          expanded = expandedNodes['dataproduct-1'];
+        } else if (node.id === 'input-group-2') {
+          expanded = expandedNodes['dataproduct-2'];
+        } else {
+          expanded = Object.values(expandedNodes).some(exp => exp);
+        }
         return { 
           ...node, 
           data: { 
@@ -225,9 +269,24 @@ function FlowCanvas() {
       return false;
     }
     
-    // For inputGroup edges, only show when DP1 is expanded
+    // For inputGroup edges, show based on which input group it is
     if (sourceNode.type === 'inputGroup') {
-      return expandedNodes['dataproduct-1'];
+      if (sourceNode.id === 'input-group-1') {
+        return expandedNodes['dataproduct-1'];
+      } else if (sourceNode.id === 'input-group-2') {
+        return expandedNodes['dataproduct-2'];
+      }
+      return expandedNodes['dataproduct-1']; // fallback
+    }
+    
+    // For edges TO inputGroup nodes
+    if (targetNode.type === 'inputGroup') {
+      if (targetNode.id === 'input-group-1') {
+        return expandedNodes['dataproduct-1'];
+      } else if (targetNode.id === 'input-group-2') {
+        return expandedNodes['dataproduct-2'];
+      }
+      return expandedNodes['dataproduct-1']; // fallback
     }
     
     // For edges FROM dataproduct TO group nodes
@@ -237,6 +296,15 @@ function FlowCanvas() {
       }
       if (sourceNode.id === 'dataproduct-2' && targetNode.id === 'group-2') {
         return expandedNodes['dataproduct-2'];
+      }
+      return false;
+    }
+    
+    // For edges FROM group nodes TO inputGroup nodes (DP1 outputs → DP2 inputs)
+    if (sourceNode.type === 'group' && targetNode.type === 'inputGroup') {
+      if (sourceNode.id === 'group-1' && targetNode.id === 'input-group-2') {
+        // Show edges when both DP1 and DP2 are expanded
+        return expandedNodes['dataproduct-1'] && expandedNodes['dataproduct-2'];
       }
       return false;
     }
