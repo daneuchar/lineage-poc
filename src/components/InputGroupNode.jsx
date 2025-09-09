@@ -1,14 +1,16 @@
-import { Handle, Position } from '@xyflow/react';
-import { useState, useEffect, useRef } from 'react';
+import { Handle, Position } from "@xyflow/react";
+import { useState, useEffect, useRef } from "react";
 
 function InputGroupNode({ data }) {
   const [selectedInput, setSelectedInput] = useState(null);
   const [showAll, setShowAll] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const visibleInputsRef = useRef([]);
 
   const handleInputClick = (inputIndex) => {
     const newSelected = selectedInput === inputIndex ? null : inputIndex;
     setSelectedInput(newSelected);
-    
+
     if (data.onInputSelect && data.inputs) {
       const inputId = newSelected !== null ? data.inputs[newSelected].id : null;
       data.onInputSelect(inputId);
@@ -16,7 +18,7 @@ function InputGroupNode({ data }) {
   };
 
   const handleViewMore = () => {
-    setShowAll(prev => !prev);
+    setShowAll((prev) => !prev);
   };
 
   const lastVisibleHandlesRef = useRef([]);
@@ -24,27 +26,38 @@ function InputGroupNode({ data }) {
   // Report visible handles to parent
   useEffect(() => {
     if (data.onVisibleHandlesChange && data.inputs) {
+      if (searchQuery) {
+        const keywords = searchQuery.toLowerCase();
+        const visibleHandleIds = (data.inputs || [])
+          .filter((input) => input.label.toLowerCase().includes(keywords))
+          .map((input) => input.id);
+
+        visibleInputsRef.current = visibleHandleIds;
+
+        data.onVisibleHandlesChange(visibleHandleIds);
+      }
+
       const visibleHandleIds = data.inputs
         .filter((_, i) => showAll || i < 3)
-        .map(input => input.id);
-      
+        .map((input) => input.id);
+
       // Only call if handles actually changed
-      const handleIdsStr = visibleHandleIds.join(',');
-      const lastHandleIdsStr = lastVisibleHandlesRef.current.join(',');
-      
+      const handleIdsStr = visibleHandleIds.join(",");
+      const lastHandleIdsStr = lastVisibleHandlesRef.current.join(",");
+
       if (handleIdsStr !== lastHandleIdsStr) {
         lastVisibleHandlesRef.current = visibleHandleIds;
         data.onVisibleHandlesChange(visibleHandleIds);
       }
     }
-  }, [showAll]);
+  }, [showAll, searchQuery]);
 
   if (!data.expanded) {
     return (
       <div className="input-group-node">
         <div className="group-header">
           <h4>Input Ports</h4>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+          <div style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}>
             Click Data Product to expand
           </div>
         </div>
@@ -61,61 +74,71 @@ function InputGroupNode({ data }) {
       <div className="group-header">
         <h4>Input Ports</h4>
       </div>
+      <input
+        type="text"
+        placeholder="Search inputs..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        style={{
+          padding: "4px 8px",
+          marginBottom: "8px",
+          outline: "none",
+        }}
+      />
       <div className="input-items">
         {inputs.map((input, i) => {
-          const isVisible = showAll || i < 3;
+          const isVisible = searchQuery
+            ? visibleInputsRef.current.includes(input.id)
+            : showAll || i < 3;
           const isSelected = selectedInput === i;
           return (
-            <div 
-              key={input.id} 
-              className={`input-item ${isSelected ? 'selected' : ''}`}
+            <div
+              key={input.id}
+              className={`input-item ${isSelected ? "selected" : ""}`}
               onClick={() => handleInputClick(i)}
-              style={{ 
+              style={{
                 opacity: isVisible ? 1 : 0,
-                height: isVisible ? 'auto' : '0',
-                minHeight: isVisible ? '20px' : '0',
-                padding: isVisible ? '4px 8px' : '0 8px',
-                marginBottom: isVisible ? '4px' : '0',
-              
-                transition: 'all 0.2s ease'
+                height: isVisible ? "auto" : "0",
+                minHeight: isVisible ? "20px" : "0",
+                padding: isVisible ? "4px 8px" : "0 8px",
+                marginBottom: isVisible ? "4px" : "0",
+
+                transition: "all 0.2s ease",
               }}
             >
               <span>{input.label}</span>
               {/* Target handle for incoming edges from DP1 outputs */}
-              <Handle 
-                type="target" 
-                position={Position.Left} 
+              <Handle
+                type="target"
+                position={Position.Left}
                 id={input.id}
-                style={{ 
-                  position: 'absolute',
-                  left: '-5px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  opacity: isVisible ? 1 : 0
+                style={{
+                  position: "absolute",
+                  left: "-5px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  opacity: isVisible ? 1 : 0,
                 }}
               />
               {/* Source handle for outgoing edges to DP2 */}
-              <Handle 
-                type="source" 
-                position={Position.Right} 
+              <Handle
+                type="source"
+                position={Position.Right}
                 id={input.id}
-                style={{ 
-                  position: 'absolute',
-                  right: '-5px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  opacity: isVisible ? 1 : 0
+                style={{
+                  position: "absolute",
+                  right: "-5px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  opacity: isVisible ? 1 : 0,
                 }}
               />
             </div>
           );
         })}
-        {hasMore && (
-          <div 
-            className="view-more-button"
-            onClick={handleViewMore}
-          >
-            {showAll ? '▲ View Less' : `▼ View More (${inputs.length - 3})`}
+        {hasMore && searchQuery.length === 0 && (
+          <div className="view-more-button" onClick={handleViewMore}>
+            {showAll ? "▲ View Less" : `▼ View More (${inputs.length - 3})`}
           </div>
         )}
       </div>
