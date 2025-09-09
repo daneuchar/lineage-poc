@@ -136,6 +136,17 @@ export const mockApi = {
             dataType: ['web-data', 'mobile-data', 'desktop-data', 'api-data'][i],
           }
         })),
+        // Direct edge from dataproduct-1 to dataproduct-2
+        {
+          id: 'edge-dp1-to-dp2-direct',
+          source: 'dataproduct-1',
+          target: 'dataproduct-2',
+          style: { stroke: '#9ca3af', strokeWidth: 1 },
+          data: {
+            connectionType: 'direct-dp-connection',
+            dataType: 'aggregated-data',
+          }
+        },
         // Output edges (from dataproduct-2 to output ports 2)
         ...Array.from({ length: 8 }, (_, i) => ({
           id: `edge-dataproduct2-child-${i + 1}`,

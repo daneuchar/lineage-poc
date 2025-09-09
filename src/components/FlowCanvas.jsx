@@ -317,6 +317,12 @@ function FlowCanvas() {
       return false;
     }
     
+    // For direct edges between dataproduct nodes - show if edge exists in data
+    if (sourceNode.type === 'dataproduct' && targetNode.type === 'dataproduct') {
+      // Show direct edge when both dataproducts exist (always visible)
+      return true;
+    }
+    
     return false;
   });
 
