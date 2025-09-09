@@ -33,8 +33,8 @@ function InputGroupNode({ data }) {
           .map((input) => input.id);
 
         visibleInputsRef.current = visibleHandleIds;
-
         data.onVisibleHandlesChange(visibleHandleIds);
+        return;
       }
 
       const visibleHandleIds = data.inputs
