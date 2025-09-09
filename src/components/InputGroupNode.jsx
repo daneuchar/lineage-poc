@@ -29,7 +29,7 @@ function InputGroupNode({ data }) {
       if (searchQuery) {
         const keywords = searchQuery.toLowerCase();
         const visibleHandleIds = (data.inputs || [])
-          .filter((input) => input.label.toLowerCase().includes(keywords))
+          .filter((input) => input.label.toLowerCase().startsWith(keywords))
           .map((input) => input.id);
 
         visibleInputsRef.current = visibleHandleIds;
