@@ -33,7 +33,6 @@ function FlowCanvas() {
   const [visibleHandles, setVisibleHandles] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const originalEdgesRef = useRef([]);
 
   // Calculate layout using Dagre
   const calculateDagreLayout = useCallback((nodes, edges, expandedNodes) => {
@@ -47,7 +46,6 @@ function FlowCanvas() {
         setLoading(true);
         setError(null);
         const data = await mockApi.getFlowData();
-        originalEdgesRef.current = data.edges;
 
         // Add default positions for initial load (Dagre will override these)
         const nodesWithDefaultPositions = data.nodes.map((node) => ({
@@ -137,7 +135,7 @@ function FlowCanvas() {
         // Smart expansion logic: when expanding a dataproduct, auto-expand dependencies
         if (newState[nodeId] && !prev[nodeId]) {
           // Find all dataproducts that this one depends on (via group->inputGroup connections)
-          const dependencyDataProducts = originalEdgesRef.current
+          const dependencyDataProducts = edges
             .filter((edge) => {
               const targetNode = nodes.find((n) => n.id === edge.target);
               if (targetNode?.type === "inputGroup") {
@@ -168,7 +166,7 @@ function FlowCanvas() {
         // Smart collapse logic: when collapsing a dataproduct, auto-collapse dependents
         if (!newState[nodeId] && prev[nodeId]) {
           // Find all dataproducts that depend on this one
-          const dependentDataProducts = originalEdgesRef.current
+          const dependentDataProducts = edges
             .filter((edge) => {
               const sourceNode = nodes.find((n) => n.id === edge.source);
               if (sourceNode?.type === "group") {
@@ -228,21 +226,17 @@ function FlowCanvas() {
   // Update layout when expansion state changes
   useEffect(() => {
     console.log("Layout effect triggered, expandedNodes:", expandedNodes);
-    if (originalEdgesRef.current.length > 0) {
+    if (edges.length > 0) {
       setNodes((currentNodes) => {
         console.log("Recalculating layout with nodes:", currentNodes.length);
-        return calculateDagreLayout(
-          currentNodes,
-          originalEdgesRef.current,
-          expandedNodes
-        );
+        return calculateDagreLayout(currentNodes, edges, expandedNodes);
       });
     }
   }, [expandedNodes, calculateDagreLayout, setNodes]);
 
   // Helper function to check if edges exist between two nodes
   const hasConnectingEdges = (sourceNodeId, targetNodeId) => {
-    return originalEdgesRef.current.some(
+    return edges.some(
       (edge) => edge.source === sourceNodeId && edge.target === targetNodeId
     );
   };
@@ -250,7 +244,7 @@ function FlowCanvas() {
   // Dynamic helper functions based on edge data
   const getDataProductForGroup = (groupNodeId) => {
     // Find which dataproduct connects to this group
-    const edge = originalEdgesRef.current.find(
+    const edge = edges.find(
       (edge) =>
         edge.target === groupNodeId &&
         nodes.find((n) => n.id === edge.source)?.type === "dataproduct"
@@ -260,7 +254,7 @@ function FlowCanvas() {
 
   const getDataProductForInputGroup = (inputGroupId) => {
     // Find which dataproduct this inputGroup connects to
-    const edge = originalEdgesRef.current.find(
+    const edge = edges.find(
       (edge) =>
         edge.source === inputGroupId &&
         nodes.find((n) => n.id === edge.target)?.type === "dataproduct"
@@ -270,7 +264,7 @@ function FlowCanvas() {
 
   const getInputGroupsConnectedToGroup = (groupId) => {
     // Find inputGroups that receive from this group
-    return originalEdgesRef.current
+    return edges
       .filter(
         (edge) =>
           edge.source === groupId &&
@@ -281,7 +275,7 @@ function FlowCanvas() {
 
   const getGroupsConnectedToInputGroup = (inputGroupId) => {
     // Find groups that feed into this inputGroup
-    return originalEdgesRef.current
+    return edges
       .filter(
         (edge) =>
           edge.target === inputGroupId &&
@@ -362,7 +356,7 @@ function FlowCanvas() {
     });
 
   // Filter edges to only show when nodes are expanded and handles exist, and apply styling
-  const filteredEdges = originalEdgesRef.current
+  const filteredEdges = edges
     .filter((edge) => {
       const sourceNode = nodesWithCallback.find((n) => n.id === edge.source);
       const targetNode = nodesWithCallback.find((n) => n.id === edge.target);
