@@ -137,9 +137,9 @@ function FlowCanvas() {
         // Smart expansion logic: if expanding DP2, also expand DP1 only if there are connecting edges
         if (nodeId === "dataproduct-2" && newState["dataproduct-2"]) {
           // Check if DP2 has input connections from DP1 outputs
-          const hasDP1ToDP2Connection = originalEdgesRef.current.some(
-            (edge) =>
-              edge.source === "group-1" && edge.target === "input-group-2"
+          const hasDP1ToDP2Connection = hasConnectingEdges(
+            "group-1",
+            "input-group-2"
           );
 
           if (hasDP1ToDP2Connection) {
@@ -158,10 +158,9 @@ function FlowCanvas() {
           !newState["dataproduct-1"] &&
           prev["dataproduct-2"]
         ) {
-          // Check if DP2 depends on DP1 outputs
-          const hasDP1ToDP2Connection = originalEdgesRef.current.some(
-            (edge) =>
-              edge.source === "group-1" && edge.target === "input-group-2"
+          const hasDP1ToDP2Connection = hasConnectingEdges(
+            "group-1",
+            "input-group-2"
           );
 
           if (hasDP1ToDP2Connection) {
