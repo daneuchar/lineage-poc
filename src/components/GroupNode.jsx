@@ -81,8 +81,12 @@ function GroupNode({ data }) {
       </div>
       <input
         type="text"
-        id={`output-search-${data.label?.replace(/\s+/g, '-').toLowerCase() || 'default'}`}
-        name={`output-search-${data.label?.replace(/\s+/g, '-').toLowerCase() || 'default'}`}
+        id={`output-search-${
+          data.label?.replace(/\s+/g, "-").toLowerCase() || "default"
+        }`}
+        name={`output-search-${
+          data.label?.replace(/\s+/g, "-").toLowerCase() || "default"
+        }`}
         placeholder="Search outputs..."
         value={searchQuery}
         onChange={(e) => {
@@ -103,12 +107,12 @@ function GroupNode({ data }) {
               className={`child-item ${isSelected ? "selected" : ""}`}
               onClick={() => handleChildClick(i)}
               style={{
+                pointerEvents: isVisible ? "auto" : "none",
                 opacity: isVisible ? 1 : 0,
                 height: isVisible ? "auto" : "0",
                 minHeight: isVisible ? "20px" : "0",
                 padding: isVisible ? "4px 8px" : "0 8px",
                 marginBottom: isVisible ? "4px" : "0",
-
                 transition: "all 0.2s ease",
               }}
             >
