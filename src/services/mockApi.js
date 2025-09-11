@@ -88,14 +88,71 @@ export const mockApi = {
               ],
             },
           },
+          {
+            id: "dataproduct-3",
+            type: "dataproduct",
+            data: { label: "Data Product 3" },
+          },
+          {
+            id: "input-group-3",
+            type: "inputGroup",
+            data: {
+              label: "Input Ports 3",
+              inputs: [
+                { id: "input-3-1", label: "Input 3 1" },
+                { id: "input-3-2", label: "Input 3 2" },
+                { id: "input-3-3", label: "Input 3 3" },
+                { id: "input-3-4", label: "Input 3 4" },
+              ],
+            },
+          },
         ],
         edges: [
+          {
+            id: "edge-output-input-3-1",
+            target: "input-group-3",
+            targetHandle: "input-3-1",
+            source: "group-2",
+            sourceHandle: "child-2-1",
+            style: { stroke: "#9ca3af", strokeWidth: 1 },
+          },
+          {
+            id: "edge-output-input-3-2",
+            target: "input-group-3",
+            targetHandle: "input-3-2",
+            source: "group-2",
+            sourceHandle: "child-2-2",
+            style: { stroke: "#9ca3af", strokeWidth: 1 },
+          },
+          {
+            id: "edge-output-input-3-3",
+            target: "input-group-3",
+            targetHandle: "input-3-3",
+            source: "group-1",
+            sourceHandle: "child-1",
+            style: { stroke: "#9ca3af", strokeWidth: 1 },
+          },
+          {
+            id: "edge-output-input-3-4",
+            target: "input-group-3",
+            targetHandle: "input-3-4",
+            source: "group-1",
+            sourceHandle: "child-2",
+            style: { stroke: "#9ca3af", strokeWidth: 1 },
+          },
           {
             id: "edge-input-dataproduct-12345",
             source: "dataproduct-1",
             target: "dataproduct-2",
             style: { stroke: "#f97316" },
           },
+          ...Array.from({ length: 4 }, (_, i) => ({
+            id: `edge-input-dataproduct-3-${i + 1}`,
+            source: "input-group-3",
+            sourceHandle: `input-3-${i + 1}`,
+            target: "dataproduct-3",
+            style: { stroke: "#9ca3af", strokeWidth: 1 },
+          })),
           // Input edges (from input ports to dataproduct)
           ...Array.from({ length: 8 }, (_, i) => ({
             id: `edge-input-dataproduct-${i + 1}`,
