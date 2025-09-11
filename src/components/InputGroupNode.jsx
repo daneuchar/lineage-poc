@@ -76,14 +76,13 @@ function InputGroupNode({ data }) {
       </div>
       <input
         type="text"
+        id={`input-search-${data.label?.replace(/\s+/g, '-').toLowerCase() || 'default'}`}
+        name={`input-search-${data.label?.replace(/\s+/g, '-').toLowerCase() || 'default'}`}
         placeholder="Search inputs..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        style={{
-          padding: "4px 8px",
-          marginBottom: "8px",
-          outline: "none",
-        }}
+        className="input-search"
+        autoComplete="off"
       />
       <div className="input-items">
         {inputs.map((input, i) => {
