@@ -108,38 +108,22 @@ export const mockApi = {
           },
         ],
         edges: [
-          {
-            id: "edge-output-input-3-1",
+          ...Array.from({ length: 2 }, (_, i) => ({
+            id: `edge-output-input-3-${i + 1}`,
             target: "input-group-3",
-            targetHandle: "input-3-1",
+            targetHandle: `input-3-${i + 1}`,
             source: "group-2",
-            sourceHandle: "child-2-1",
+            sourceHandle: `child-2-${i + 1}`,
             style: { stroke: "#9ca3af", strokeWidth: 1 },
-          },
-          {
-            id: "edge-output-input-3-2",
+          })),
+          ...Array.from({ length: 2 }, (_, i) => ({
+            id: `edge-output-input-3-${i + 3}`,
             target: "input-group-3",
-            targetHandle: "input-3-2",
-            source: "group-2",
-            sourceHandle: "child-2-2",
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
-          },
-          {
-            id: "edge-output-input-3-3",
-            target: "input-group-3",
-            targetHandle: "input-3-3",
+            targetHandle: `input-3-${i + 3}`,
             source: "group-1",
-            sourceHandle: "child-1",
+            sourceHandle: `child-${i + 1}`,
             style: { stroke: "#9ca3af", strokeWidth: 1 },
-          },
-          {
-            id: "edge-output-input-3-4",
-            target: "input-group-3",
-            targetHandle: "input-3-4",
-            source: "group-1",
-            sourceHandle: "child-2",
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
-          },
+          })),
           {
             id: "edge-input-dataproduct-12345",
             source: "dataproduct-1",
