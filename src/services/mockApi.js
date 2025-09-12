@@ -114,7 +114,6 @@ export const mockApi = {
             targetHandle: `input-3-${i + 1}`,
             source: "group-2",
             sourceHandle: `child-2-${i + 1}`,
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
           })),
           ...Array.from({ length: 2 }, (_, i) => ({
             id: `edge-output-input-3-${i + 3}`,
@@ -122,7 +121,6 @@ export const mockApi = {
             targetHandle: `input-3-${i + 3}`,
             source: "group-1",
             sourceHandle: `child-${i + 1}`,
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
           })),
           {
             id: "edge-input-dataproduct-12345",
@@ -135,7 +133,6 @@ export const mockApi = {
             source: "input-group-3",
             sourceHandle: `input-3-${i + 1}`,
             target: "dataproduct-3",
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
           })),
           // Input edges (from input ports to dataproduct)
           ...Array.from({ length: 8 }, (_, i) => ({
@@ -143,7 +140,6 @@ export const mockApi = {
             source: "input-group-1",
             sourceHandle: `input-${i + 1}`,
             target: "dataproduct-1",
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
             data: {
               connectionType: "input",
               dataType: [
@@ -164,7 +160,6 @@ export const mockApi = {
             source: "dataproduct-1",
             target: "group-1",
             targetHandle: `child-${i + 1}`,
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
             data: {
               connectionType: "output",
               bandwidth: Math.floor(Math.random() * 100) + 50,
@@ -177,7 +172,6 @@ export const mockApi = {
             sourceHandle: `child-${i + 1}`, // Use first 4 outputs from DP1
             target: "input-group-2",
             targetHandle: `input-2-${i + 1}`,
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
             data: {
               connectionType: "dp1-to-dp2-input",
               dataType: ["web-data", "mobile-data", "desktop-data", "api-data"][
@@ -191,7 +185,6 @@ export const mockApi = {
             source: "input-group-2",
             sourceHandle: `input-2-${i + 1}`,
             target: "dataproduct-2",
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
             data: {
               connectionType: "input-to-dp2",
               dataType: ["web-data", "mobile-data", "desktop-data", "api-data"][
@@ -205,7 +198,6 @@ export const mockApi = {
             source: "dataproduct-2",
             target: "group-2",
             targetHandle: `child-2-${i + 1}`,
-            style: { stroke: "#9ca3af", strokeWidth: 1 },
             data: {
               connectionType: "output",
               bandwidth: Math.floor(Math.random() * 100) + 50,

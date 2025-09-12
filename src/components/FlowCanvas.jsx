@@ -443,9 +443,7 @@ function FlowCanvas() {
     return (
       <div className="loading-container">
         <div className="loading-content">
-          <div className="loading-text">
-            Loading flow data...
-          </div>
+          <div className="loading-text">Loading flow data...</div>
           <div className="loading-spinner"></div>
         </div>
       </div>
@@ -456,9 +454,7 @@ function FlowCanvas() {
     return (
       <div className="error-container">
         <div className="error-content">
-          <div className="error-title">
-            Error loading flow data
-          </div>
+          <div className="error-title">Error loading flow data</div>
           <div className="error-message">{error}</div>
         </div>
       </div>
@@ -482,7 +478,7 @@ function FlowCanvas() {
         }}
         defaultEdgeOptions={{
           animated: false,
-          style: { strokeWidth: 2 },
+          style: { strokeWidth: 1 },
         }}
       >
         <Controls />
