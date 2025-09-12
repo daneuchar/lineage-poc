@@ -441,37 +441,12 @@ function FlowCanvas() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#f9fafb",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "14px",
-              color: "#6b7280",
-              marginBottom: "8px",
-            }}
-          >
+      <div className="loading-container">
+        <div className="loading-content">
+          <div className="loading-text">
             Loading flow data...
           </div>
-          <div
-            style={{
-              width: "24px",
-              height: "24px",
-              border: "2px solid #e5e7eb",
-              borderTop: "2px solid #3b82f6",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-              margin: "0 auto",
-            }}
-          ></div>
+          <div className="loading-spinner"></div>
         </div>
       </div>
     );
@@ -479,39 +454,19 @@ function FlowCanvas() {
 
   if (error) {
     return (
-      <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#f9fafb",
-        }}
-      >
-        <div
-          style={{
-            textAlign: "center",
-            padding: "20px",
-            background: "white",
-            borderRadius: "8px",
-            border: "1px solid #fecaca",
-            color: "#dc2626",
-          }}
-        >
-          <div
-            style={{ fontSize: "14px", fontWeight: "600", marginBottom: "8px" }}
-          >
+      <div className="error-container">
+        <div className="error-content">
+          <div className="error-title">
             Error loading flow data
           </div>
-          <div style={{ fontSize: "12px" }}>{error}</div>
+          <div className="error-message">{error}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div className="flow-container">
       <ReactFlow
         nodes={nodesWithCallback}
         edges={filteredEdges}

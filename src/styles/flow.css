@@ -6,6 +6,7 @@
   min-width: 80px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   color: #374151;
+  cursor: pointer;
 }
 
 .dataproduct-node .node-content h3 {
@@ -16,6 +17,12 @@
 
 .dataproduct-node .node-content p {
   display: none;
+}
+
+.dataproduct-node .node-status {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
 }
 
 .child-node {
@@ -91,6 +98,25 @@
   color: #1e40af;
 }
 
+.child-item.hidden {
+  pointer-events: none;
+  opacity: 0;
+  height: 0;
+  min-height: 0;
+  padding: 0 8px;
+  margin-bottom: 0;
+}
+
+.child-item.visible {
+  pointer-events: auto;
+  opacity: 1;
+  height: auto;
+  min-height: 20px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
 .react-flow__handle {
   width: 6px;
   height: 6px;
@@ -104,6 +130,28 @@
 
 .react-flow__handle-valid {
   background: #6b7280;
+}
+
+.handle-left {
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.handle-right {
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.handle-hidden {
+  opacity: 0;
+}
+
+.handle-visible {
+  opacity: 1;
 }
 
 .react-flow__minimap {
@@ -129,6 +177,68 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.loading-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.error-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+}
+
+.error-content {
+  text-align: center;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.error-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  font-size: 12px;
+}
+
+.flow-container {
+  width: 100vw;
+  height: 100vh;
 }
 
 
@@ -189,6 +299,25 @@
   background: #bbf7d0;
   border-color: #10b981;
   color: #047857;
+}
+
+.input-item.hidden {
+  pointer-events: none;
+  opacity: 0;
+  height: 0;
+  min-height: 0;
+  padding: 0 8px;
+  margin-bottom: 0;
+}
+
+.input-item.visible {
+  pointer-events: auto;
+  opacity: 1;
+  height: auto;
+  min-height: 20px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
 }
 
 .view-more-button {

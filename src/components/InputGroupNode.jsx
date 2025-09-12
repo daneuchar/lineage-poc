@@ -93,17 +93,8 @@ function InputGroupNode({ data }) {
           return (
             <div
               key={input.id}
-              className={`input-item ${isSelected ? "selected" : ""}`}
+              className={`input-item ${isSelected ? "selected" : ""} ${isVisible ? "visible" : "hidden"}`}
               onClick={() => handleInputClick(i)}
-              style={{
-                pointerEvents: isVisible ? "auto" : "none",
-                opacity: isVisible ? 1 : 0,
-                height: isVisible ? "auto" : "0",
-                minHeight: isVisible ? "20px" : "0",
-                padding: isVisible ? "4px 8px" : "0 8px",
-                marginBottom: isVisible ? "4px" : "0",
-                transition: "all 0.2s ease",
-              }}
             >
               <span>{input.label}</span>
               {/* Target handle for incoming edges from DP1 outputs */}
@@ -111,26 +102,14 @@ function InputGroupNode({ data }) {
                 type="target"
                 position={Position.Left}
                 id={input.id}
-                style={{
-                  position: "absolute",
-                  left: "-5px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  opacity: isVisible ? 1 : 0,
-                }}
+                className={`handle-left ${isVisible ? "handle-visible" : "handle-hidden"}`}
               />
               {/* Source handle for outgoing edges to DP2 */}
               <Handle
                 type="source"
                 position={Position.Right}
                 id={input.id}
-                style={{
-                  position: "absolute",
-                  right: "-5px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  opacity: isVisible ? 1 : 0,
-                }}
+                className={`handle-right ${isVisible ? "handle-visible" : "handle-hidden"}`}
               />
             </div>
           );
