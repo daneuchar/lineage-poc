@@ -50,7 +50,7 @@ function FlowCanvas() {
         // Add default positions for initial load (Dagre will override these)
         const nodesWithDefaultPositions = data.nodes.map((node) => ({
           ...node,
-          position: { x: 0, y: 0 },
+          // position: { x: 0, y: 0 },
         }));
 
         const layoutNodes = calculateDagreLayout(
@@ -184,6 +184,8 @@ function FlowCanvas() {
             })
             .filter(Boolean);
 
+          console.log({ dependentDataProducts });
+
           dependentDataProducts.forEach((depDP) => {
             if (depDP && prev[depDP]) {
               newState[depDP] = false;
@@ -213,7 +215,7 @@ function FlowCanvas() {
         return newState;
       });
     },
-    [fitView, getNode]
+    [fitView, getNode, nodes, edges]
   );
 
   const handleVisibleHandlesChange = useCallback((nodeId, handles) => {
@@ -225,10 +227,10 @@ function FlowCanvas() {
 
   // Update layout when expansion state changes
   useEffect(() => {
-    console.log("Layout effect triggered, expandedNodes:", expandedNodes);
+    // console.log("Layout effect triggered, expandedNodes:", expandedNodes);
     if (edges.length > 0) {
       setNodes((currentNodes) => {
-        console.log("Recalculating layout with nodes:", currentNodes.length);
+        // console.log("Recalculating layout with nodes:", currentNodes.length);
         return calculateDagreLayout(currentNodes, edges, expandedNodes);
       });
     }
@@ -356,88 +358,62 @@ function FlowCanvas() {
     });
 
   // Filter edges to only show when nodes are expanded and handles exist, and apply styling
-  const filteredEdges = edges
-    .filter((edge) => {
-      const sourceNode = nodesWithCallback.find((n) => n.id === edge.source);
-      const targetNode = nodesWithCallback.find((n) => n.id === edge.target);
+  const filteredEdges = edges.filter((edge) => {
+    const sourceNode = nodesWithCallback.find((n) => n.id === edge.source);
+    const targetNode = nodesWithCallback.find((n) => n.id === edge.target);
 
-      // Only include edges if both nodes exist in the filtered node list
-      if (!sourceNode || !targetNode) {
-        return false;
-      }
-
-      // For inputGroup edges FROM inputGroup
-      if (sourceNode.type === "inputGroup") {
-        const dataProductId = getDataProductForInputGroup(sourceNode.id);
-        return dataProductId ? expandedNodes[dataProductId] : false;
-      }
-
-      // For edges TO inputGroup nodes
-      if (targetNode.type === "inputGroup") {
-        const dataProductId = getDataProductForInputGroup(targetNode.id);
-        return dataProductId ? expandedNodes[dataProductId] : false;
-      }
-
-      // For edges FROM dataproduct TO group nodes
-      if (sourceNode.type === "dataproduct" && targetNode.type === "group") {
-        return expandedNodes[sourceNode.id];
-      }
-
-      // For edges FROM group nodes TO inputGroup nodes
-      if (sourceNode.type === "group" && targetNode.type === "inputGroup") {
-        const sourceDataProductId = getDataProductForGroup(sourceNode.id);
-        const targetDataProductId = getDataProductForInputGroup(targetNode.id);
-        // Show edges when both related dataproducts are expanded
-        return (
-          sourceDataProductId &&
-          targetDataProductId &&
-          expandedNodes[sourceDataProductId] &&
-          expandedNodes[targetDataProductId]
-        );
-      }
-
-      // For edges FROM group nodes TO dataproduct nodes
-      if (sourceNode.type === "group" && targetNode.type === "dataproduct") {
-        const sourceDataProductId = getDataProductForGroup(sourceNode.id);
-        return sourceDataProductId ? expandedNodes[sourceDataProductId] : false;
-      }
-
-      // For direct edges between dataproduct nodes - show if edge exists in data
-      if (
-        sourceNode.type === "dataproduct" &&
-        targetNode.type === "dataproduct"
-      ) {
-        // Show direct edge when both dataproducts exist (always visible)
-        return true;
-      }
-
+    // Only include edges if both nodes exist in the filtered node list
+    if (!sourceNode || !targetNode) {
       return false;
-    })
-    .map((edge) => {
-      const sourceNode = nodesWithCallback.find((n) => n.id === edge.source);
-      const targetNode = nodesWithCallback.find((n) => n.id === edge.target);
+    }
 
-      // Hide direct DP-DP edges when either dataproduct is expanded
-      if (
-        sourceNode?.type === "dataproduct" &&
-        targetNode?.type === "dataproduct"
-      ) {
-        const sourceExpanded = expandedNodes[edge.source];
-        const targetExpanded = expandedNodes[edge.target];
+    // For inputGroup edges FROM inputGroup
+    if (sourceNode.type === "inputGroup") {
+      const dataProductId = getDataProductForInputGroup(sourceNode.id);
+      return dataProductId ? expandedNodes[dataProductId] : false;
+    }
 
-        if (sourceExpanded || targetExpanded) {
-          return {
-            ...edge,
-            style: {
-              ...edge.style,
-              opacity: 0,
-            },
-          };
-        }
-      }
+    // For edges TO inputGroup nodes
+    if (targetNode.type === "inputGroup") {
+      const dataProductId = getDataProductForInputGroup(targetNode.id);
+      return dataProductId ? expandedNodes[dataProductId] : false;
+    }
 
-      return edge;
-    });
+    // For edges FROM dataproduct TO group nodes
+    if (sourceNode.type === "dataproduct" && targetNode.type === "group") {
+      return expandedNodes[sourceNode.id];
+    }
+
+    // For edges FROM group nodes TO inputGroup nodes
+    if (sourceNode.type === "group" && targetNode.type === "inputGroup") {
+      const sourceDataProductId = getDataProductForGroup(sourceNode.id);
+      const targetDataProductId = getDataProductForInputGroup(targetNode.id);
+      // Show edges when both related dataproducts are expanded
+      return (
+        sourceDataProductId &&
+        targetDataProductId &&
+        expandedNodes[sourceDataProductId] &&
+        expandedNodes[targetDataProductId]
+      );
+    }
+
+    // For edges FROM group nodes TO dataproduct nodes
+    if (sourceNode.type === "group" && targetNode.type === "dataproduct") {
+      const sourceDataProductId = getDataProductForGroup(sourceNode.id);
+      return sourceDataProductId ? expandedNodes[sourceDataProductId] : false;
+    }
+
+    // For direct edges between dataproduct nodes - show if edge exists in data
+    if (
+      sourceNode.type === "dataproduct" &&
+      targetNode.type === "dataproduct"
+    ) {
+      // Show direct edge when both dataproducts exist (always visible)
+      return !(expandedNodes[sourceNode.id] && expandedNodes[targetNode.id]);
+    }
+
+    return false;
+  });
 
   if (loading) {
     return (

@@ -128,6 +128,12 @@ export const mockApi = {
             target: "dataproduct-2",
             style: { stroke: "#f97316" },
           },
+          {
+            id: "edge-input-dataproduct-123456",
+            source: "dataproduct-2",
+            target: "dataproduct-3",
+            style: { stroke: "#f97316" },
+          },
           ...Array.from({ length: 4 }, (_, i) => ({
             id: `edge-input-dataproduct-3-${i + 1}`,
             source: "input-group-3",
