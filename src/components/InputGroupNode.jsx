@@ -3,11 +3,16 @@ import { useState, useEffect, useRef } from "react";
 
 function InputGroupNode({ data }) {
   const [selectedInput, setSelectedInput] = useState(null);
-  const [showAll, setShowAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const visibleInputsRef = useRef([]);
 
-  const handleInputClick = (inputIndex) => {
+  // Use showAll from props or default to false
+  const showAll = data.showAll || false;
+
+  const handleInputClick = (inputIndex, e) => {
+    // Stop propagation to prevent parent node selection
+    e.stopPropagation();
+
     const newSelected = selectedInput === inputIndex ? null : inputIndex;
     setSelectedInput(newSelected);
 
@@ -17,8 +22,14 @@ function InputGroupNode({ data }) {
     }
   };
 
-  const handleViewMore = () => {
-    setShowAll((prev) => !prev);
+  const handleViewMore = (e) => {
+    // Stop propagation to prevent parent node selection
+    e.stopPropagation();
+
+    // Notify parent to update showAll state
+    if (data.onShowAllChange) {
+      data.onShowAllChange(!showAll);
+    }
   };
 
   const lastVisibleHandlesRef = useRef([]);
@@ -69,8 +80,20 @@ function InputGroupNode({ data }) {
   const visibleInputs = showAll ? inputs : inputs.slice(0, 3);
   const hasMore = inputs.length > 3;
 
+  const handleNodeClick = (e) => {
+    // Only trigger if clicking the node container itself, not children
+    if (e.target.closest('.input-group-node') === e.currentTarget) {
+      if (data.onNodeClick) {
+        data.onNodeClick();
+      }
+    }
+  };
+
   return (
-    <div className="input-group-node">
+    <div
+      className={`input-group-node ${data.selected ? 'selected' : ''}`}
+      onClick={handleNodeClick}
+    >
       <div className="group-header">
         <h4>Input Ports</h4>
       </div>
@@ -81,6 +104,7 @@ function InputGroupNode({ data }) {
         placeholder="Search inputs..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
         className="input-search"
         autoComplete="off"
       />
@@ -94,7 +118,7 @@ function InputGroupNode({ data }) {
             <div
               key={input.id}
               className={`input-item ${isSelected ? "selected" : ""} ${isVisible ? "visible" : "hidden"}`}
-              onClick={() => handleInputClick(i)}
+              onClick={(e) => handleInputClick(i, e)}
             >
               <span>{input.label}</span>
               {/* Target handle for incoming edges from DP1 outputs */}
@@ -115,7 +139,7 @@ function InputGroupNode({ data }) {
           );
         })}
         {hasMore && searchQuery.length === 0 && (
-          <div className="view-more-button" onClick={handleViewMore}>
+          <div className="view-more-button" onClick={(e) => handleViewMore(e)}>
             {showAll ? "▲ View Less" : `▼ View More (${inputs.length - 3})`}
           </div>
         )}

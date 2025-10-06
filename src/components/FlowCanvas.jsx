@@ -16,6 +16,15 @@ import GroupNode from "./GroupNode";
 import InputGroupNode from "./InputGroupNode";
 import { mockApi } from "../services/mockApi";
 import { getLayoutedNodes } from "../utils/layoutUtils";
+import {
+  getDataProductForGroup,
+  getDataProductForInputGroup,
+  getDependentDataProducts,
+  getDependencyDataProducts,
+  hasConnectingEdges as checkConnectingEdges,
+  getInputGroupsConnectedToGroup,
+  getGroupsConnectedToInputGroup,
+} from "../utils/graphUtils";
 
 const nodeTypes = {
   dataproduct: DataProductNode,
@@ -29,14 +38,16 @@ function FlowCanvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedChild, setSelectedChild] = useState(null);
   const [_selectedInput, setSelectedInput] = useState(null);
+  const [selectedNode, setSelectedNode] = useState(null); // Track selected node for edge highlighting
   const [expandedNodes, setExpandedNodes] = useState({});
   const [visibleHandles, setVisibleHandles] = useState({});
+  const [showAllStates, setShowAllStates] = useState({}); // Track "show all" state per node
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Calculate layout using Dagre
-  const calculateDagreLayout = useCallback((nodes, edges, expandedNodes) => {
-    return getLayoutedNodes(nodes, edges, expandedNodes);
+  // Calculate layout using ELK
+  const calculateLayout = useCallback(async (nodes, edges, expandedNodes, showAllStates) => {
+    return await getLayoutedNodes(nodes, edges, expandedNodes, showAllStates);
   }, []);
 
   // Load data from mock API
@@ -47,15 +58,16 @@ function FlowCanvas() {
         setError(null);
         const data = await mockApi.getFlowData();
 
-        // Add default positions for initial load (Dagre will override these)
+        // Add default positions for initial load (ELK will override these)
         const nodesWithDefaultPositions = data.nodes.map((node) => ({
           ...node,
-          // position: { x: 0, y: 0 },
+          position: { x: 0, y: 0 },
         }));
 
-        const layoutNodes = calculateDagreLayout(
+        const layoutNodes = await calculateLayout(
           nodesWithDefaultPositions,
           data.edges,
+          {},
           {}
         );
         setNodes(layoutNodes);
@@ -68,7 +80,7 @@ function FlowCanvas() {
     };
 
     loadFlowData();
-  }, [setNodes, setEdges, calculateDagreLayout]);
+  }, [setNodes, setEdges, calculateLayout]);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -78,49 +90,19 @@ function FlowCanvas() {
   const handleChildSelect = useCallback(
     (childId) => {
       setSelectedChild(childId);
-
-      // Update edges with highlighting
-      setEdges((eds) =>
-        eds.map((edge) => ({
-          ...edge,
-          style: {
-            ...edge.style,
-            stroke: edge.targetHandle === childId ? "#3b82f6" : "#9ca3af",
-            strokeWidth: edge.targetHandle === childId ? 2 : 1,
-          },
-        }))
-      );
+      // Set the selected node to the child ID for edge highlighting
+      setSelectedNode(childId);
     },
-    [setEdges]
+    []
   );
 
   const handleInputSelect = useCallback(
     (inputId) => {
       setSelectedInput(inputId);
-
-      // Update edges with highlighting for input connections
-      setEdges((eds) =>
-        eds.map((edge) => ({
-          ...edge,
-          style: {
-            ...edge.style,
-            stroke:
-              edge.sourceHandle === inputId
-                ? "#10b981"
-                : edge.targetHandle === selectedChild
-                ? "#3b82f6"
-                : "#9ca3af",
-            strokeWidth:
-              edge.sourceHandle === inputId
-                ? 2
-                : edge.targetHandle === selectedChild
-                ? 2
-                : 1,
-          },
-        }))
-      );
+      // Set the selected node to the input ID for edge highlighting
+      setSelectedNode(inputId);
     },
-    [setEdges, selectedChild]
+    []
   );
 
   const handleToggleExpansion = useCallback(
@@ -135,23 +117,7 @@ function FlowCanvas() {
         // Smart expansion logic: when expanding a dataproduct, auto-expand dependencies
         if (newState[nodeId] && !prev[nodeId]) {
           // Find all dataproducts that this one depends on (via group->inputGroup connections)
-          const dependencyDataProducts = edges
-            .filter((edge) => {
-              const targetNode = nodes.find((n) => n.id === edge.target);
-              if (targetNode?.type === "inputGroup") {
-                const dependentDP = getDataProductForInputGroup(edge.target);
-                return dependentDP === nodeId;
-              }
-              return false;
-            })
-            .map((edge) => {
-              const sourceNode = nodes.find((n) => n.id === edge.source);
-              if (sourceNode?.type === "group") {
-                return getDataProductForGroup(edge.source);
-              }
-              return null;
-            })
-            .filter(Boolean);
+          const dependencyDataProducts = getDependencyDataProducts(nodeId, edges, nodes);
 
           dependencyDataProducts.forEach((depDP) => {
             if (depDP && !prev[depDP]) {
@@ -166,23 +132,7 @@ function FlowCanvas() {
         // Smart collapse logic: when collapsing a dataproduct, auto-collapse dependents
         if (!newState[nodeId] && prev[nodeId]) {
           // Find all dataproducts that depend on this one
-          const dependentDataProducts = edges
-            .filter((edge) => {
-              const sourceNode = nodes.find((n) => n.id === edge.source);
-              if (sourceNode?.type === "group") {
-                const sourceDP = getDataProductForGroup(edge.source);
-                return sourceDP === nodeId;
-              }
-              return false;
-            })
-            .map((edge) => {
-              const targetNode = nodes.find((n) => n.id === edge.target);
-              if (targetNode?.type === "inputGroup") {
-                return getDataProductForInputGroup(edge.target);
-              }
-              return null;
-            })
-            .filter(Boolean);
+          const dependentDataProducts = getDependentDataProducts(nodeId, edges, nodes);
 
           console.log({ dependentDataProducts });
 
@@ -225,65 +175,32 @@ function FlowCanvas() {
     }));
   }, []);
 
-  // Update layout when expansion state changes
+  const handleShowAllChange = useCallback((nodeId, showAll) => {
+    setShowAllStates((prev) => {
+      const newState = { ...prev, [nodeId]: showAll };
+      return newState;
+    });
+  }, []);
+
+  const handleNodeClick = useCallback((nodeId) => {
+    // Toggle selection: if clicking the same node, deselect it
+    setSelectedNode((prev) => (prev === nodeId ? null : nodeId));
+  }, []);
+
+  // Update layout when expansion state or showAll state changes
   useEffect(() => {
-    // console.log("Layout effect triggered, expandedNodes:", expandedNodes);
-    if (edges.length > 0) {
-      setNodes((currentNodes) => {
-        // console.log("Recalculating layout with nodes:", currentNodes.length);
-        return calculateDagreLayout(currentNodes, edges, expandedNodes);
-      });
-    }
-  }, [expandedNodes, calculateDagreLayout, setNodes]);
+    const updateLayout = async () => {
+      if (edges.length > 0) {
+        const layoutedNodes = await calculateLayout(nodes, edges, expandedNodes, showAllStates);
+        setNodes(layoutedNodes);
+      }
+    };
+    updateLayout();
+  }, [expandedNodes, showAllStates]);
 
   // Helper function to check if edges exist between two nodes
   const hasConnectingEdges = (sourceNodeId, targetNodeId) => {
-    return edges.some(
-      (edge) => edge.source === sourceNodeId && edge.target === targetNodeId
-    );
-  };
-
-  // Dynamic helper functions based on edge data
-  const getDataProductForGroup = (groupNodeId) => {
-    // Find which dataproduct connects to this group
-    const edge = edges.find(
-      (edge) =>
-        edge.target === groupNodeId &&
-        nodes.find((n) => n.id === edge.source)?.type === "dataproduct"
-    );
-    return edge?.source;
-  };
-
-  const getDataProductForInputGroup = (inputGroupId) => {
-    // Find which dataproduct this inputGroup connects to
-    const edge = edges.find(
-      (edge) =>
-        edge.source === inputGroupId &&
-        nodes.find((n) => n.id === edge.target)?.type === "dataproduct"
-    );
-    return edge?.target;
-  };
-
-  const getInputGroupsConnectedToGroup = (groupId) => {
-    // Find inputGroups that receive from this group
-    return edges
-      .filter(
-        (edge) =>
-          edge.source === groupId &&
-          nodes.find((n) => n.id === edge.target)?.type === "inputGroup"
-      )
-      .map((edge) => edge.target);
-  };
-
-  const getGroupsConnectedToInputGroup = (inputGroupId) => {
-    // Find groups that feed into this inputGroup
-    return edges
-      .filter(
-        (edge) =>
-          edge.target === inputGroupId &&
-          nodes.find((n) => n.id === edge.source)?.type === "group"
-      )
-      .map((edge) => edge.source);
+    return checkConnectingEdges(sourceNodeId, targetNodeId, edges);
   };
 
   // Filter nodes based on expansion state and edge connectivity
@@ -292,7 +209,7 @@ function FlowCanvas() {
       // Hide input/output group nodes when their corresponding dataproduct is not expanded
       // AND only show them if there are connecting edges
       if (node.type === "group") {
-        const dataProductId = getDataProductForGroup(node.id);
+        const dataProductId = getDataProductForGroup(node.id, edges, nodes);
         if (dataProductId) {
           return (
             expandedNodes[dataProductId] &&
@@ -302,7 +219,7 @@ function FlowCanvas() {
         return false;
       }
       if (node.type === "inputGroup") {
-        const dataProductId = getDataProductForInputGroup(node.id);
+        const dataProductId = getDataProductForInputGroup(node.id, edges, nodes);
         if (dataProductId) {
           // Show inputGroup if its dataproduct is expanded AND there's a connection to the dataproduct
           return (
@@ -316,7 +233,7 @@ function FlowCanvas() {
     })
     .map((node) => {
       if (node.type === "group") {
-        const dataProductId = getDataProductForGroup(node.id);
+        const dataProductId = getDataProductForGroup(node.id, edges, nodes);
         const expanded = dataProductId ? expandedNodes[dataProductId] : false;
         return {
           ...node,
@@ -325,12 +242,16 @@ function FlowCanvas() {
             onChildSelect: handleChildSelect,
             onVisibleHandlesChange: (handles) =>
               handleVisibleHandlesChange(node.id, handles),
+            onShowAllChange: (showAll) => handleShowAllChange(node.id, showAll),
+            onNodeClick: () => handleNodeClick(node.id),
+            selected: selectedNode === node.id,
+            showAll: showAllStates[node.id] || false,
             expanded,
           },
         };
       }
       if (node.type === "inputGroup") {
-        const dataProductId = getDataProductForInputGroup(node.id);
+        const dataProductId = getDataProductForInputGroup(node.id, edges, nodes);
         const expanded = dataProductId ? expandedNodes[dataProductId] : false;
         return {
           ...node,
@@ -339,6 +260,10 @@ function FlowCanvas() {
             onInputSelect: handleInputSelect,
             onVisibleHandlesChange: (handles) =>
               handleVisibleHandlesChange(node.id, handles),
+            onShowAllChange: (showAll) => handleShowAllChange(node.id, showAll),
+            onNodeClick: () => handleNodeClick(node.id),
+            selected: selectedNode === node.id,
+            showAll: showAllStates[node.id] || false,
             expanded,
           },
         };
@@ -350,6 +275,8 @@ function FlowCanvas() {
           data: {
             ...node.data,
             onToggleExpansion: () => handleToggleExpansion(node.id),
+            onNodeClick: () => handleNodeClick(node.id),
+            selected: selectedNode === node.id,
             expanded,
           },
         };
@@ -358,7 +285,8 @@ function FlowCanvas() {
     });
 
   // Filter edges to only show when nodes are expanded and handles exist, and apply styling
-  const filteredEdges = edges.filter((edge) => {
+  const filteredEdges = edges
+    .filter((edge) => {
     const sourceNode = nodesWithCallback.find((n) => n.id === edge.source);
     const targetNode = nodesWithCallback.find((n) => n.id === edge.target);
 
@@ -369,13 +297,13 @@ function FlowCanvas() {
 
     // For inputGroup edges FROM inputGroup
     if (sourceNode.type === "inputGroup") {
-      const dataProductId = getDataProductForInputGroup(sourceNode.id);
+      const dataProductId = getDataProductForInputGroup(sourceNode.id, edges, nodes);
       return dataProductId ? expandedNodes[dataProductId] : false;
     }
 
     // For edges TO inputGroup nodes
     if (targetNode.type === "inputGroup") {
-      const dataProductId = getDataProductForInputGroup(targetNode.id);
+      const dataProductId = getDataProductForInputGroup(targetNode.id, edges, nodes);
       return dataProductId ? expandedNodes[dataProductId] : false;
     }
 
@@ -386,8 +314,8 @@ function FlowCanvas() {
 
     // For edges FROM group nodes TO inputGroup nodes
     if (sourceNode.type === "group" && targetNode.type === "inputGroup") {
-      const sourceDataProductId = getDataProductForGroup(sourceNode.id);
-      const targetDataProductId = getDataProductForInputGroup(targetNode.id);
+      const sourceDataProductId = getDataProductForGroup(sourceNode.id, edges, nodes);
+      const targetDataProductId = getDataProductForInputGroup(targetNode.id, edges, nodes);
       // Show edges when both related dataproducts are expanded
       return (
         sourceDataProductId &&
@@ -399,7 +327,7 @@ function FlowCanvas() {
 
     // For edges FROM group nodes TO dataproduct nodes
     if (sourceNode.type === "group" && targetNode.type === "dataproduct") {
-      const sourceDataProductId = getDataProductForGroup(sourceNode.id);
+      const sourceDataProductId = getDataProductForGroup(sourceNode.id, edges, nodes);
       return sourceDataProductId ? expandedNodes[sourceDataProductId] : false;
     }
 
@@ -413,6 +341,29 @@ function FlowCanvas() {
     }
 
     return false;
+  })
+  .map((edge) => {
+    // Highlight edges connected to the selected node
+    // For child nodes, check both the node ID and the handle IDs
+    const isConnectedToSelected = selectedNode && (
+      edge.source === selectedNode ||
+      edge.target === selectedNode ||
+      edge.sourceHandle === selectedNode ||
+      edge.targetHandle === selectedNode
+    );
+
+    return {
+      ...edge,
+      style: {
+        ...edge.style,
+        stroke: isConnectedToSelected
+          ? "#3b82f6" // Highlighted color (blue)
+          : edge.style?.stroke || "#9ca3af", // Default or original color
+        strokeWidth: isConnectedToSelected ? 3 : edge.style?.strokeWidth || 1,
+        opacity: selectedNode && !isConnectedToSelected ? 0.3 : 1, // Dim non-connected edges
+      },
+      animated: isConnectedToSelected, // Animate highlighted edges
+    };
   });
 
   if (loading) {
@@ -453,8 +404,10 @@ function FlowCanvas() {
           duration: 800,
         }}
         defaultEdgeOptions={{
+          type: 'default',
           animated: false,
           style: { strokeWidth: 1 },
+          pathOptions: { borderRadius: 20 },
         }}
       >
         <Controls />

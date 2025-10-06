@@ -126,13 +126,22 @@ export const mockApi = {
             id: "edge-input-dataproduct-12345",
             source: "dataproduct-1",
             target: "dataproduct-2",
+            type: "default",
             style: { stroke: "#f97316" },
           },
           {
             id: "edge-input-dataproduct-123456",
             source: "dataproduct-2",
             target: "dataproduct-3",
+            type: "default",
             style: { stroke: "#f97316" },
+          },
+          {
+            id: "edge-dp1-to-dp3",
+            source: "dataproduct-1",
+            target: "dataproduct-3",
+            type: "default",
+            style: { stroke: "#8b5cf6" },
           },
           ...Array.from({ length: 4 }, (_, i) => ({
             id: `edge-input-dataproduct-3-${i + 1}`,

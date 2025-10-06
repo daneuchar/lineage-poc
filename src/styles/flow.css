@@ -7,6 +7,13 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   color: #374151;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dataproduct-node.selected {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: #eff6ff;
 }
 
 .dataproduct-node .node-content h3 {
@@ -49,6 +56,32 @@
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
+  padding: 8px;
+  min-width: 150px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #374151;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.group-node.selected {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: #eff6ff;
+}
+
+.input-group-node {
+  background: white;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.input-group-node.selected {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: #eff6ff;
+  border-radius: 6px;
   padding: 0px;
   min-width: 150px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -86,6 +119,7 @@
   display: flex;
   align-items: center;
   cursor: pointer;
+  color: #374151;
 }
 
 .child-item:hover {

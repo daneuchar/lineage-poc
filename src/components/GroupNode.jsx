@@ -3,11 +3,16 @@ import { useState, useEffect, useRef } from "react";
 
 function GroupNode({ data }) {
   const [selectedChild, setSelectedChild] = useState(null);
-  const [showAll, setShowAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const visibleChildrenRef = useRef([]);
 
-  const handleChildClick = (childIndex) => {
+  // Use showAll from props or default to false
+  const showAll = data.showAll || false;
+
+  const handleChildClick = (childIndex, e) => {
+    // Stop propagation to prevent parent node selection
+    e.stopPropagation();
+
     const newSelected = selectedChild === childIndex ? null : childIndex;
     setSelectedChild(newSelected);
 
@@ -19,8 +24,14 @@ function GroupNode({ data }) {
     }
   };
 
-  const handleViewMore = () => {
-    setShowAll((prev) => !prev);
+  const handleViewMore = (e) => {
+    // Stop propagation to prevent parent node selection
+    e.stopPropagation();
+
+    // Notify parent to update showAll state
+    if (data.onShowAllChange) {
+      data.onShowAllChange(!showAll);
+    }
   };
 
   const lastVisibleHandlesRef = useRef([]);
@@ -74,8 +85,20 @@ function GroupNode({ data }) {
   const visibleChildren = showAll ? children : children.slice(0, 3);
   const hasMore = children.length > 3;
 
+  const handleNodeClick = (e) => {
+    // Only trigger if clicking the node container itself, not children
+    if (e.target.closest('.group-node') === e.currentTarget) {
+      if (data.onNodeClick) {
+        data.onNodeClick();
+      }
+    }
+  };
+
   return (
-    <div className="group-node">
+    <div
+      className={`group-node ${data.selected ? 'selected' : ''}`}
+      onClick={handleNodeClick}
+    >
       <div className="group-header">
         <h4>Output Ports</h4>
       </div>
@@ -92,6 +115,7 @@ function GroupNode({ data }) {
         onChange={(e) => {
           setSearchQuery(e.target.value);
         }}
+        onClick={(e) => e.stopPropagation()}
         className="input-search"
         autoComplete="off"
       />
@@ -105,7 +129,7 @@ function GroupNode({ data }) {
             <div
               key={child.id}
               className={`child-item ${isSelected ? "selected" : ""} ${isVisible ? "visible" : "hidden"}`}
-              onClick={() => handleChildClick(i)}
+              onClick={(e) => handleChildClick(i, e)}
             >
               <Handle
                 type="target"
@@ -124,7 +148,7 @@ function GroupNode({ data }) {
           );
         })}
         {hasMore && searchQuery.length === 0 && (
-          <div className="view-more-button" onClick={handleViewMore}>
+          <div className="view-more-button" onClick={(e) => handleViewMore(e)}>
             {showAll ? "▲ View Less" : `▼ View More (${children.length - 3})`}
           </div>
         )}

@@ -1,14 +1,23 @@
 import { Handle, Position } from '@xyflow/react';
 
 function DataProductNode({ data }) {
-  const handleClick = () => {
-    if (data.onToggleExpansion) {
-      data.onToggleExpansion();
+  const handleClick = (e) => {
+    // Check if clicking on the node itself (not children)
+    if (e.target.closest('.dataproduct-node') === e.currentTarget) {
+      if (data.onToggleExpansion) {
+        data.onToggleExpansion();
+      }
+      if (data.onNodeClick) {
+        data.onNodeClick();
+      }
     }
   };
 
   return (
-    <div className="dataproduct-node" onClick={handleClick}>
+    <div
+      className={`dataproduct-node ${data.selected ? 'selected' : ''}`}
+      onClick={handleClick}
+    >
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
       <div className="node-content">
