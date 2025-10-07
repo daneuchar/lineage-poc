@@ -1,10 +1,8 @@
-import ELK from 'elkjs';
+import dagre from 'dagre';
 import { getDataProductForGroup, getDataProductForInputGroup } from './graphUtils';
 
-const elk = new ELK();
-
 /**
- * Calculate automatic layout using ELK (Eclipse Layout Kernel) for hierarchical flow
+ * Calculate automatic layout using Dagre for hierarchical flow
  * @param {Array} nodes - React Flow nodes
  * @param {Array} edges - React Flow edges
  * @param {Object} expandedNodes - State of expanded nodes
@@ -16,170 +14,57 @@ export const getLayoutedNodes = async (nodes, edges, expandedNodes = {}, showAll
   console.log('Layout: Expanded nodes:', expandedNodes);
   console.log('Layout: ShowAll states:', showAllStates);
 
-  // Convert React Flow nodes to ELK format
-  const elkNodes = nodes.map((node) => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+  // Configure the graph layout
+  dagreGraph.setGraph({
+    rankdir: 'LR', // Left to Right
+    nodesep: 80,   // Vertical spacing between nodes
+    ranksep: 150,  // Horizontal spacing between layers
+    edgesep: 50,   // Edge spacing
+    marginx: 50,
+    marginy: 50,
+  });
+
+  // Add nodes to dagre graph with dynamic dimensions
+  nodes.forEach((node) => {
     const nodeWidth = getNodeWidth(node, nodes, edges, expandedNodes);
     const nodeHeight = getNodeHeight(node, nodes, edges, expandedNodes, showAllStates);
 
-    return {
-      id: node.id,
+    dagreGraph.setNode(node.id, {
       width: nodeWidth,
       height: nodeHeight,
+    });
+  });
+
+  // Add edges to dagre graph
+  edges.forEach((edge) => {
+    // Only add edges without handles for layout calculation
+    // (direct dataproduct to dataproduct edges)
+    if (!edge.sourceHandle && !edge.targetHandle) {
+      dagreGraph.setEdge(edge.source, edge.target);
+    }
+  });
+
+  // Calculate layout
+  dagre.layout(dagreGraph);
+
+  // Apply calculated positions to nodes
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+
+    return {
+      ...node,
+      position: {
+        // Dagre returns center position, adjust to top-left
+        x: nodeWithPosition.x - nodeWithPosition.width / 2,
+        y: nodeWithPosition.y - nodeWithPosition.height / 2,
+      },
     };
   });
 
-  // Convert React Flow edges to ELK format
-  const elkEdges = edges.map((edge) => ({
-    id: edge.id,
-    sources: [edge.source],
-    targets: [edge.target],
-  }));
-
-  // ELK graph configuration
-  const graph = {
-    id: 'root',
-    layoutOptions: {
-      'elk.algorithm': 'layered',
-      'elk.direction': 'RIGHT',
-      'elk.spacing.nodeNode': '50',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '100',  // Horizontal spacing between layers
-      'elk.layered.spacing.edgeNodeBetweenLayers': '40',
-      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
-      'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.layered.thoroughness': '100',
-      'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
-      'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH',
-      'elk.spacing.componentComponent': '50',
-    },
-    children: elkNodes,
-    edges: elkEdges,
-  };
-
-  try {
-    // Calculate layout using ELK
-    const layoutedGraph = await elk.layout(graph);
-
-    // Apply calculated positions to nodes
-    const layoutedNodes = nodes.map((node) => {
-      const elkNode = layoutedGraph.children.find((n) => n.id === node.id);
-
-      return {
-        ...node,
-        position: {
-          x: elkNode?.x ?? 0,
-          y: elkNode?.y ?? 0,
-        },
-      };
-    });
-
-  // Post-process: Organize nodes for hierarchical stacking
-
-  // Step 1: Find sibling dataproducts (dataproducts that share the same parent)
-  const dataproductEdges = edges.filter(e => {
-    const sourceNode = nodes.find(n => n.id === e.source);
-    const targetNode = nodes.find(n => n.id === e.target);
-    return sourceNode?.type === 'dataproduct' && targetNode?.type === 'dataproduct';
-  });
-
-  // Group children by parent
-  const childrenByParent = {};
-  dataproductEdges.forEach(edge => {
-    if (!childrenByParent[edge.source]) {
-      childrenByParent[edge.source] = [];
-    }
-    childrenByParent[edge.source].push(edge.target);
-  });
-
-  // Step 2: Stack siblings vertically
-  const stackedNodes = layoutedNodes.map(node => {
-    // Check if this node has siblings (other dataproducts with same parent)
-    if (node.type === 'dataproduct') {
-      // Find the parent of this dataproduct
-      const parentEdge = dataproductEdges.find(e => e.target === node.id);
-      if (parentEdge) {
-        const siblings = childrenByParent[parentEdge.source] || [];
-
-        if (siblings.length > 1) {
-          // This node has siblings, need to stack them
-          const siblingIndex = siblings.indexOf(node.id);
-          const parentNode = layoutedNodes.find(n => n.id === parentEdge.source);
-
-          if (parentNode && siblingIndex !== -1) {
-            // Calculate vertical position based on sibling index
-            const totalSiblings = siblings.length;
-            const spacing = 200; // vertical spacing between siblings
-            const totalHeight = (totalSiblings - 1) * spacing;
-            const startY = parentNode.position.y - (totalHeight / 2);
-
-            return {
-              ...node,
-              position: {
-                ...node.position,
-                y: startY + (siblingIndex * spacing),
-              },
-            };
-          }
-        }
-      }
-    }
-
-    return node;
-  });
-
-  // Step 3: Align input/output groups with their parent dataproduct
-  return stackedNodes.map(node => {
-    // Align group nodes vertically centered with their parent dataproduct
-    if (node.type === 'group') {
-      const parentDP = getDataProductForGroup(node.id, edges, nodes);
-      if (parentDP) {
-        const dpNode = stackedNodes.find(n => n.id === parentDP);
-        if (dpNode) {
-          // Center align with parent dataproduct
-          const dpHeight = 80; // dataproduct height
-          const groupHeight = getNodeHeight(node, nodes, edges, expandedNodes, showAllStates);
-          const yOffset = (dpHeight - groupHeight) / 2;
-
-          return {
-            ...node,
-            position: {
-              ...node.position,
-              y: dpNode.position.y + yOffset,
-            },
-          };
-        }
-      }
-    }
-
-    // Align inputGroup nodes vertically centered with their parent dataproduct
-    if (node.type === 'inputGroup') {
-      const parentDP = getDataProductForInputGroup(node.id, edges, nodes);
-      if (parentDP) {
-        const dpNode = stackedNodes.find(n => n.id === parentDP);
-        if (dpNode) {
-          // Center align with parent dataproduct
-          const dpHeight = 80; // dataproduct height
-          const inputGroupHeight = getNodeHeight(node, nodes, edges, expandedNodes, showAllStates);
-          const yOffset = (dpHeight - inputGroupHeight) / 2;
-
-          return {
-            ...node,
-            position: {
-              ...node.position,
-              y: dpNode.position.y + yOffset,
-            },
-          };
-        }
-      }
-    }
-
-    return node;
-  });
-  } catch (error) {
-    console.error('ELK layout error:', error);
-    // Return nodes with default positions if layout fails
-    return nodes;
-  }
+  return layoutedNodes;
 };
 
 /**
@@ -187,8 +72,10 @@ export const getLayoutedNodes = async (nodes, edges, expandedNodes = {}, showAll
  */
 const getNodeWidth = (node, allNodes, edges, expandedNodes) => {
   switch (node.type) {
-    case 'dataproduct':
-      return 120;
+    case 'dataproduct': {
+      const isExpanded = expandedNodes[node.id];
+      return isExpanded ? 420 : 120;
+    }
     case 'inputGroup': {
       const dataProductId = getDataProductForInputGroup(node.id, edges, allNodes);
       const isExpanded = dataProductId ? expandedNodes[dataProductId] : false;
@@ -209,8 +96,29 @@ const getNodeWidth = (node, allNodes, edges, expandedNodes) => {
  */
 const getNodeHeight = (node, allNodes, edges, expandedNodes, showAllStates = {}) => {
   switch (node.type) {
-    case 'dataproduct':
-      return 80;
+    case 'dataproduct': {
+      const isExpanded = expandedNodes[node.id];
+      if (!isExpanded) return 80;
+
+      // Calculate height based on number of ports with pagination
+      const inputCount = node.data?.inputs?.length || 0;
+      const outputCount = node.data?.outputs?.length || 0;
+      const ITEMS_PER_PAGE = 5;
+
+      // Show max 5 items per page
+      const visibleInputs = Math.min(inputCount, ITEMS_PER_PAGE);
+      const visibleOutputs = Math.min(outputCount, ITEMS_PER_PAGE);
+      const maxVisiblePorts = Math.max(visibleInputs, visibleOutputs);
+
+      // Check if pagination is needed
+      const needsInputPagination = inputCount > ITEMS_PER_PAGE;
+      const needsOutputPagination = outputCount > ITEMS_PER_PAGE;
+      const needsPagination = needsInputPagination || needsOutputPagination;
+
+      // header (50) + port header (30) + items (28 each) + pagination (36 if needed) + padding (20)
+      const paginationHeight = needsPagination ? 36 : 0;
+      return 100 + (maxVisiblePorts * 28) + paginationHeight;
+    }
     case 'inputGroup': {
       const dataProductId = getDataProductForInputGroup(node.id, edges, allNodes);
       const isExpanded = dataProductId ? expandedNodes[dataProductId] : false;
