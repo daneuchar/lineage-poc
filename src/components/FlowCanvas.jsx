@@ -85,26 +85,73 @@ function FlowCanvas() {
 
   const handleToggleExpansion = useCallback(
     (nodeId) => {
-      setExpandedNodes((prev) => ({
-        ...prev,
-        [nodeId]: !prev[nodeId],
-      }));
+      // Determine if we're expanding or collapsing
+      setExpandedNodes((prev) => {
+        const isExpanding = !prev[nodeId];
+        const newState = { ...prev, [nodeId]: isExpanding };
 
-      // Center on the node after expansion with a slight delay
-      setTimeout(() => {
-        const node = getNode(nodeId);
-        if (node) {
-          fitView({
-            nodes: [node],
-            duration: 800,
-            padding: 0.3,
-            minZoom: 0.8,
-            maxZoom: 1.2,
+        // If expanding, also expand all directly connected nodes (radius 1)
+        if (isExpanding) {
+          // Find all edges connected to this node
+          const connectedNodeIds = new Set();
+
+          edges.forEach((edge) => {
+            // Check if this is a direct dataproduct edge (no handles)
+            if (!edge.sourceHandle && !edge.targetHandle) {
+              if (edge.source === nodeId) {
+                connectedNodeIds.add(edge.target);
+              } else if (edge.target === nodeId) {
+                connectedNodeIds.add(edge.source);
+              }
+            }
           });
+
+          // Expand all connected nodes
+          connectedNodeIds.forEach((connectedId) => {
+            newState[connectedId] = true;
+          });
+
+          console.log(`Expanding ${nodeId} and ${connectedNodeIds.size} connected nodes:`, Array.from(connectedNodeIds));
+
+          // Center on all expanded nodes after expansion with a slight delay
+          setTimeout(() => {
+            const expandedNodeIds = [nodeId, ...Array.from(connectedNodeIds)];
+
+            // Get the actual node objects
+            const nodesToFit = expandedNodeIds
+              .map(id => getNode(id))
+              .filter(Boolean);
+
+            if (nodesToFit.length > 0) {
+              fitView({
+                nodes: nodesToFit,
+                duration: 800,
+                padding: 0.2,
+                minZoom: 0.5,
+                maxZoom: 1.0,
+              });
+            }
+          }, 100);
+        } else {
+          // Just center on the collapsed node
+          setTimeout(() => {
+            const node = getNode(nodeId);
+            if (node) {
+              fitView({
+                nodes: [node],
+                duration: 800,
+                padding: 0.3,
+                minZoom: 0.8,
+                maxZoom: 1.2,
+              });
+            }
+          }, 100);
         }
-      }, 100);
+
+        return newState;
+      });
     },
-    [fitView, getNode]
+    [fitView, getNode, edges]
   );
 
   const handlePortSelect = useCallback((portId) => {
