@@ -47,13 +47,13 @@ export const mockApi = {
               inputs: [
                 { id: "dp2-input-1", label: "Web Data", relatedPorts: ["dp2-output-1", "dp2-output-2"] },
                 { id: "dp2-input-2", label: "Mobile Data", relatedPorts: ["dp2-output-1", "dp2-output-2"] },
-                { id: "dp2-input-3", label: "Desktop Data", relatedPorts: ["dp2-output-1", "dp2-output-3"] },
+                { id: "dp2-input-3", label: "Desktop Data", relatedPorts: [ "dp2-output-3"] },
                 { id: "dp2-input-4", label: "API Data", relatedPorts: ["dp2-output-3", "dp2-output-4"] },
                 { id: "dp2-input-5", label: "Database Data", relatedPorts: ["dp2-output-4", "dp2-output-5"] },
-                { id: "dp2-input-6", label: "Cache Data", relatedPorts: ["dp2-output-5", "dp2-output-6"] },
+                { id: "dp2-input-6", label: "Cache Data", relatedPorts: ["dp2-output-1", "dp2-output-5", "dp2-output-6"] },
               ],
               outputs: [
-                { id: "dp2-output-1", label: "Reports API", relatedPorts: ["dp2-input-1", "dp2-input-2", "dp2-input-3"] },
+                { id: "dp2-output-1", label: "Reports API", relatedPorts: ["dp2-input-1", "dp2-input-2", "dp2-input-6"] },
                 { id: "dp2-output-2", label: "Dashboard", relatedPorts: ["dp2-input-1", "dp2-input-2"] },
                 { id: "dp2-output-3", label: "ETL Pipeline", relatedPorts: ["dp2-input-3", "dp2-input-4"] },
                 { id: "dp2-output-4", label: "Data Lake", relatedPorts: ["dp2-input-4", "dp2-input-5"] },

@@ -69,16 +69,33 @@ function DataProductNode({ data }) {
   const inputs = data.inputs || [];
   const outputs = data.outputs || [];
 
-  // Calculate pagination
-  const inputTotalPages = Math.ceil(inputs.length / ITEMS_PER_PAGE);
-  const outputTotalPages = Math.ceil(outputs.length / ITEMS_PER_PAGE);
+  // Sort ports so related ones appear first
+  const sortedInputs = [...inputs].sort((a, b) => {
+    const aIsRelated = relatedPorts.includes(a.id);
+    const bIsRelated = relatedPorts.includes(b.id);
+    if (aIsRelated && !bIsRelated) return -1;
+    if (!aIsRelated && bIsRelated) return 1;
+    return 0;
+  });
 
-  const visibleInputs = inputs.slice(
+  const sortedOutputs = [...outputs].sort((a, b) => {
+    const aIsRelated = relatedPorts.includes(a.id);
+    const bIsRelated = relatedPorts.includes(b.id);
+    if (aIsRelated && !bIsRelated) return -1;
+    if (!aIsRelated && bIsRelated) return 1;
+    return 0;
+  });
+
+  // Calculate pagination
+  const inputTotalPages = Math.ceil(sortedInputs.length / ITEMS_PER_PAGE);
+  const outputTotalPages = Math.ceil(sortedOutputs.length / ITEMS_PER_PAGE);
+
+  const visibleInputs = sortedInputs.slice(
     inputPage * ITEMS_PER_PAGE,
     (inputPage + 1) * ITEMS_PER_PAGE
   );
 
-  const visibleOutputs = outputs.slice(
+  const visibleOutputs = sortedOutputs.slice(
     outputPage * ITEMS_PER_PAGE,
     (outputPage + 1) * ITEMS_PER_PAGE
   );
