@@ -140,6 +140,17 @@
   color: #1e40af;
 }
 
+.port-item.related {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.port-item.related:hover {
+  background: #fde68a;
+  border-color: #d97706;
+}
+
 .input-ports .port-item {
   padding-left: 12px;
 }

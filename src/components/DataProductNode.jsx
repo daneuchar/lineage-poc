@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 function DataProductNode({ data }) {
   const [selectedInput, setSelectedInput] = useState(null);
   const [selectedOutput, setSelectedOutput] = useState(null);
+  const [relatedPorts, setRelatedPorts] = useState([]); // Track related ports for highlighting
   const [inputPage, setInputPage] = useState(0);
   const [outputPage, setOutputPage] = useState(0);
 
@@ -19,19 +20,37 @@ function DataProductNode({ data }) {
     setOutputPage(0);
   };
 
-  const handleInputClick = (inputId, e) => {
+  const handleInputClick = (input, e) => {
     e.stopPropagation();
-    const newSelected = selectedInput === inputId ? null : inputId;
+    const newSelected = selectedInput === input.id ? null : input.id;
     setSelectedInput(newSelected);
+    setSelectedOutput(null); // Clear output selection
+
+    // Set related ports for highlighting
+    if (newSelected) {
+      setRelatedPorts(input.relatedPorts || []);
+    } else {
+      setRelatedPorts([]);
+    }
+
     if (data.onPortSelect) {
       data.onPortSelect(newSelected);
     }
   };
 
-  const handleOutputClick = (outputId, e) => {
+  const handleOutputClick = (output, e) => {
     e.stopPropagation();
-    const newSelected = selectedOutput === outputId ? null : outputId;
+    const newSelected = selectedOutput === output.id ? null : output.id;
     setSelectedOutput(newSelected);
+    setSelectedInput(null); // Clear input selection
+
+    // Set related ports for highlighting
+    if (newSelected) {
+      setRelatedPorts(output.relatedPorts || []);
+    } else {
+      setRelatedPorts([]);
+    }
+
     if (data.onPortSelect) {
       data.onPortSelect(newSelected);
     }
@@ -107,8 +126,8 @@ function DataProductNode({ data }) {
                 {visibleInputs.map((input, index) => (
                   <div
                     key={input.id}
-                    className={`port-item ${selectedInput === input.id ? 'selected' : ''}`}
-                    onClick={(e) => handleInputClick(input.id, e)}
+                    className={`port-item ${selectedInput === input.id ? 'selected' : ''} ${relatedPorts.includes(input.id) ? 'related' : ''}`}
+                    onClick={(e) => handleInputClick(input, e)}
                   >
                     <Handle
                       type="target"
@@ -154,8 +173,8 @@ function DataProductNode({ data }) {
                 {visibleOutputs.map((output, index) => (
                   <div
                     key={output.id}
-                    className={`port-item ${selectedOutput === output.id ? 'selected' : ''}`}
-                    onClick={(e) => handleOutputClick(output.id, e)}
+                    className={`port-item ${selectedOutput === output.id ? 'selected' : ''} ${relatedPorts.includes(output.id) ? 'related' : ''}`}
+                    onClick={(e) => handleOutputClick(output, e)}
                   >
                     <span className="port-label">{output.label}</span>
                     <Handle
