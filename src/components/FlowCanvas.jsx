@@ -3,6 +3,7 @@ import {
   ReactFlow,
   MiniMap,
   Controls,
+  ControlButton,
   Background,
   useNodesState,
   useEdgesState,
@@ -41,6 +42,7 @@ function FlowCanvas() {
   const [visiblePorts, setVisiblePorts] = useState({}); // Track visible ports per node
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showBackground, setShowBackground] = useState(true); // Track background visibility
 
   // Calculate layout using ELK
   const calculateLayout = useCallback(async (nodes, edges, expandedNodes) => {
@@ -218,26 +220,16 @@ function FlowCanvas() {
       }
 
       // For dataproduct to dataproduct edges with handles (port-to-port)
-      // Show only when both dataproducts are expanded AND both ports are visible
+      // Show only when both dataproducts are expanded
       if (edge.sourceHandle && edge.targetHandle) {
         const bothExpanded = expandedNodes[edge.source] && expandedNodes[edge.target];
-        if (!bothExpanded) return false;
-
-        // Check if source port is visible
-        const sourceVisiblePorts = visiblePorts[edge.source];
-        const sourcePortVisible = sourceVisiblePorts?.outputs?.includes(edge.sourceHandle);
-
-        // Check if target port is visible
-        const targetVisiblePorts = visiblePorts[edge.target];
-        const targetPortVisible = targetVisiblePorts?.inputs?.includes(edge.targetHandle);
-
-        return sourcePortVisible && targetPortVisible;
+        return bothExpanded;
       }
 
       // For direct dataproduct to dataproduct edges (without handles)
-      // Show only when both dataproducts are collapsed
+      // Show when at least one dataproduct is collapsed (hide only when both are expanded)
       if (sourceNode.type === "dataproduct" && targetNode.type === "dataproduct") {
-        return !expandedNodes[edge.source] && !expandedNodes[edge.target];
+        return !(expandedNodes[edge.source] && expandedNodes[edge.target]);
       }
 
       return false;
@@ -256,8 +248,8 @@ function FlowCanvas() {
         style: {
           ...edge.style,
           stroke: isConnectedToSelected
-            ? "#3b82f6" // Highlighted color (blue)
-            : edge.style?.stroke || "#9ca3af", // Default or original color
+            ? "#0097C2" // Highlighted color (Focus blue)
+            : edge.style?.stroke || "#9C9C9C", // Default or original color
           strokeWidth: isConnectedToSelected ? 3 : edge.style?.strokeWidth || 1,
           opacity: selectedNode && !isConnectedToSelected ? 0.3 : 1, // Dim non-connected edges
         },
@@ -309,9 +301,24 @@ function FlowCanvas() {
           pathOptions: { borderRadius: 20 },
         }}
       >
-        <Controls />
+        <Controls>
+          <ControlButton onClick={() => setShowBackground(!showBackground)} title={showBackground ? "Hide Grid" : "Show Grid"}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {showBackground ? (
+                <rect x="2" y="2" width="12" height="12" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              ) : (
+                <>
+                  <rect x="2" y="2" width="5" height="5" fill="currentColor" />
+                  <rect x="9" y="2" width="5" height="5" fill="currentColor" />
+                  <rect x="2" y="9" width="5" height="5" fill="currentColor" />
+                  <rect x="9" y="9" width="5" height="5" fill="currentColor" />
+                </>
+              )}
+            </svg>
+          </ControlButton>
+        </Controls>
         <MiniMap />
-        <Background variant="dots" gap={12} size={1} />
+        {showBackground && <Background variant="dots" gap={12} size={1} />}
       </ReactFlow>
     </div>
   );
