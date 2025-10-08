@@ -93,21 +93,21 @@ export const mockApi = {
             source: "dataproduct-1",
             target: "dataproduct-2",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#3b82f6" },
           },
           {
             id: "edge-dp2-to-dp3-direct",
             source: "dataproduct-2",
             target: "dataproduct-3",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#10b981" },
           },
           {
             id: "edge-dp1-to-dp3-direct",
             source: "dataproduct-1",
             target: "dataproduct-3",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#8b5cf6" },
           },
           // DP1 to DP2 connections (output ports to input ports - shown when expanded)
           {
@@ -117,7 +117,7 @@ export const mockApi = {
             target: "dataproduct-2",
             targetHandle: "dp2-input-1",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#3b82f6" },
           },
           {
             id: "edge-dp1-out2-to-dp2-in2",
@@ -126,7 +126,7 @@ export const mockApi = {
             target: "dataproduct-2",
             targetHandle: "dp2-input-2",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#3b82f6" },
           },
           {
             id: "edge-dp1-out3-to-dp2-in3",
@@ -135,7 +135,7 @@ export const mockApi = {
             target: "dataproduct-2",
             targetHandle: "dp2-input-3",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#3b82f6" },
           },
           {
             id: "edge-dp1-out5-to-dp2-in5",
@@ -144,7 +144,7 @@ export const mockApi = {
             target: "dataproduct-2",
             targetHandle: "dp2-input-5",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#3b82f6" },
           },
           // DP2 to DP3 connections
           {
@@ -154,7 +154,7 @@ export const mockApi = {
             target: "dataproduct-3",
             targetHandle: "dp3-input-1",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#10b981" },
           },
           {
             id: "edge-dp2-out2-to-dp3-in2",
@@ -163,7 +163,7 @@ export const mockApi = {
             target: "dataproduct-3",
             targetHandle: "dp3-input-2",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#10b981" },
           },
           {
             id: "edge-dp2-out3-to-dp3-in3",
@@ -172,7 +172,7 @@ export const mockApi = {
             target: "dataproduct-3",
             targetHandle: "dp3-input-3",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#10b981" },
           },
           // DP1 to DP3 direct connection
           {
@@ -182,7 +182,7 @@ export const mockApi = {
             target: "dataproduct-3",
             targetHandle: "dp3-input-4",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#8b5cf6" },
           },
           {
             id: "edge-dp1-out8-to-dp3-in6",
@@ -191,7 +191,7 @@ export const mockApi = {
             target: "dataproduct-3",
             targetHandle: "dp3-input-6",
             type: "default",
-            style: { stroke: "#5A5D5C" },
+            style: { stroke: "#8b5cf6" },
           },
         ],
       };
@@ -240,7 +240,7 @@ export const mockApi = {
           source: "dataproduct-1",
           target: "group-1",
           targetHandle: `child-${i + 1}`,
-          style: { stroke: "#9C9C9C", strokeWidth: 1 },
+          style: { stroke: "#9ca3af", strokeWidth: 1 },
         })),
       },
       network: {
@@ -277,7 +277,7 @@ export const mockApi = {
           source: "dataproduct-1",
           target: "group-1",
           targetHandle: `child-${i + 1}`,
-          style: { stroke: "#9C9C9C", strokeWidth: 1 },
+          style: { stroke: "#9ca3af", strokeWidth: 1 },
         })),
       },
     };
