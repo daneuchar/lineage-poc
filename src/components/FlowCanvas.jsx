@@ -36,6 +36,7 @@ function FlowCanvas() {
   const { fitView, getNode } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [relationships, setRelationships] = useState([]); // Store relationships from API
   const [selectedNode, setSelectedNode] = useState(null); // Track selected port for edge highlighting
   const [expandedNodes, setExpandedNodes] = useState({});
   const [visiblePorts, setVisiblePorts] = useState({}); // Track visible ports per node
@@ -47,6 +48,67 @@ function FlowCanvas() {
     return await getLayoutedNodes(nodes, edges, expandedNodes, {});
   }, []);
 
+  // Build edges dynamically from relationships
+  const buildEdgesFromRelationships = useCallback(() => {
+    const builtEdges = [];
+
+    relationships.forEach((rel) => {
+      // Direct node-to-node edges (shown when collapsed)
+      if (rel.type === "direct") {
+        // Only show if both nodes are collapsed
+        if (!expandedNodes[rel.sourceNode] && !expandedNodes[rel.targetNode]) {
+          builtEdges.push({
+            id: `edge-${rel.id}`,
+            source: rel.sourceNode,
+            target: rel.targetNode,
+            type: "default",
+            style: rel.style,
+          });
+        }
+      }
+
+      // Port-to-port edges (shown when expanded)
+      if (rel.type === "port") {
+        // Only show if both nodes are expanded
+        const bothExpanded = expandedNodes[rel.sourceNode] && expandedNodes[rel.targetNode];
+        if (!bothExpanded) return;
+
+        // Check if both ports are visible
+        const sourceVisiblePorts = visiblePorts[rel.sourceNode];
+        const sourcePortVisible = sourceVisiblePorts?.outputs?.includes(rel.sourcePort);
+
+        const targetVisiblePorts = visiblePorts[rel.targetNode];
+        const targetPortVisible = targetVisiblePorts?.inputs?.includes(rel.targetPort);
+
+        // Only create edge if both ports are visible
+        if (sourcePortVisible && targetPortVisible) {
+          builtEdges.push({
+            id: `edge-${rel.id}`,
+            source: rel.sourceNode,
+            sourceHandle: rel.sourcePort,
+            target: rel.targetNode,
+            targetHandle: rel.targetPort,
+            type: "default",
+            style: rel.style,
+          });
+        }
+      }
+    });
+
+    return builtEdges;
+  }, [relationships, expandedNodes, visiblePorts]);
+
+  // Update edges whenever expansion state or visible ports change
+  // Use debounce to ensure all handles are registered before building edges
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const newEdges = buildEdgesFromRelationships();
+      setEdges(newEdges);
+    }, 1); // 1ms debounce ensures proper execution order
+
+    return () => clearTimeout(timeoutId);
+  }, [buildEdgesFromRelationships, setEdges]);
+
   // Load data from mock API
   useEffect(() => {
     const loadFlowData = async () => {
@@ -55,19 +117,35 @@ function FlowCanvas() {
         setError(null);
         const data = await mockApi.getFlowData();
 
+        // Store relationships for dynamic edge building
+        setRelationships(data.relationships || []);
+
         // Add default positions for initial load (ELK will override these)
         const nodesWithDefaultPositions = data.nodes.map((node) => ({
           ...node,
           position: { x: 0, y: 0 },
         }));
 
+        // Build initial edges (will be empty for collapsed nodes)
+        const initialEdges = [];
+        data.relationships?.forEach((rel) => {
+          if (rel.type === "direct") {
+            initialEdges.push({
+              id: `edge-${rel.id}`,
+              source: rel.sourceNode,
+              target: rel.targetNode,
+              type: "default",
+              style: rel.style,
+            });
+          }
+        });
+
         const layoutNodes = await calculateLayout(
           nodesWithDefaultPositions,
-          data.edges,
+          initialEdges,
           {}
         );
         setNodes(layoutNodes);
-        setEdges(data.edges);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -76,12 +154,24 @@ function FlowCanvas() {
     };
 
     loadFlowData();
-  }, [setNodes, setEdges, calculateLayout]);
+  }, [setNodes, calculateLayout]);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
+
+  // Suppress handle-related errors during pagination transitions
+  const onError = useCallback((code, message) => {
+    // Suppress error #008 (handle not found) during pagination
+    // This can happen temporarily while React Flow processes handle updates
+    if (code === '008') {
+      console.debug('Handle temporarily unavailable during pagination:', message);
+      return;
+    }
+    // Log other errors normally
+    console.error(`React Flow Error ${code}:`, message);
+  }, []);
 
   const handleToggleExpansion = useCallback(
     (nodeId) => {
@@ -206,64 +296,29 @@ function FlowCanvas() {
     return node;
   });
 
-  // Filter and style edges
-  const filteredEdges = edges
-    .filter((edge) => {
-      const sourceNode = nodesWithCallback.find((n) => n.id === edge.source);
-      const targetNode = nodesWithCallback.find((n) => n.id === edge.target);
+  // Style edges based on selection
+  const styledEdges = edges.map((edge) => {
+    // Highlight edges connected to the selected port
+    const isConnectedToSelected = selectedNode && (
+      edge.source === selectedNode ||
+      edge.target === selectedNode ||
+      edge.sourceHandle === selectedNode ||
+      edge.targetHandle === selectedNode
+    );
 
-      // Only show edges if both nodes exist
-      if (!sourceNode || !targetNode) {
-        return false;
-      }
-
-      // For dataproduct to dataproduct edges with handles (port-to-port)
-      // Show only when both dataproducts are expanded AND both ports are visible
-      if (edge.sourceHandle && edge.targetHandle) {
-        const bothExpanded = expandedNodes[edge.source] && expandedNodes[edge.target];
-        if (!bothExpanded) return false;
-
-        // Check if source port is visible
-        const sourceVisiblePorts = visiblePorts[edge.source];
-        const sourcePortVisible = sourceVisiblePorts?.outputs?.includes(edge.sourceHandle);
-
-        // Check if target port is visible
-        const targetVisiblePorts = visiblePorts[edge.target];
-        const targetPortVisible = targetVisiblePorts?.inputs?.includes(edge.targetHandle);
-
-        return sourcePortVisible && targetPortVisible;
-      }
-
-      // For direct dataproduct to dataproduct edges (without handles)
-      // Show only when both dataproducts are collapsed
-      if (sourceNode.type === "dataproduct" && targetNode.type === "dataproduct") {
-        return !expandedNodes[edge.source] && !expandedNodes[edge.target];
-      }
-
-      return false;
-    })
-    .map((edge) => {
-      // Highlight edges connected to the selected port
-      const isConnectedToSelected = selectedNode && (
-        edge.source === selectedNode ||
-        edge.target === selectedNode ||
-        edge.sourceHandle === selectedNode ||
-        edge.targetHandle === selectedNode
-      );
-
-      return {
-        ...edge,
-        style: {
-          ...edge.style,
-          stroke: isConnectedToSelected
-            ? "#3b82f6" // Highlighted color (blue)
-            : edge.style?.stroke || "#9ca3af", // Default or original color
-          strokeWidth: isConnectedToSelected ? 3 : edge.style?.strokeWidth || 1,
-          opacity: selectedNode && !isConnectedToSelected ? 0.3 : 1, // Dim non-connected edges
-        },
-        animated: isConnectedToSelected, // Animate highlighted edges
-      };
-    });
+    return {
+      ...edge,
+      style: {
+        ...edge.style,
+        stroke: isConnectedToSelected
+          ? "#3b82f6" // Highlighted color (blue)
+          : edge.style?.stroke || "#9ca3af", // Default or original color
+        strokeWidth: isConnectedToSelected ? 3 : edge.style?.strokeWidth || 1,
+        opacity: selectedNode && !isConnectedToSelected ? 0.3 : 1, // Dim non-connected edges
+      },
+      animated: isConnectedToSelected, // Animate highlighted edges
+    };
+  });
 
   if (loading) {
     return (
@@ -291,10 +346,11 @@ function FlowCanvas() {
     <div className="flow-container">
       <ReactFlow
         nodes={nodesWithCallback}
-        edges={filteredEdges}
+        edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onError={onError}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{

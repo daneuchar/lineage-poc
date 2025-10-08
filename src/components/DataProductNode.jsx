@@ -1,7 +1,8 @@
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useState, useEffect } from 'react';
 
-function DataProductNode({ data }) {
+function DataProductNode({ id, data }) {
+  const updateNodeInternals = useUpdateNodeInternals();
   const [selectedInput, setSelectedInput] = useState(null);
   const [selectedOutput, setSelectedOutput] = useState(null);
   const [relatedPorts, setRelatedPorts] = useState([]); // Track related ports for highlighting
@@ -100,14 +101,38 @@ function DataProductNode({ data }) {
     (outputPage + 1) * ITEMS_PER_PAGE
   );
 
-  // Notify parent about visible ports when they change
+  // Update React Flow internals and notify parent about visible ports
   useEffect(() => {
-    if (data.onVisiblePortsChange && data.expanded) {
-      const visibleInputIds = visibleInputs.map(input => input.id);
-      const visibleOutputIds = visibleOutputs.map(output => output.id);
-      data.onVisiblePortsChange(visibleInputIds, visibleOutputIds);
+    if (data.expanded) {
+      // First, update React Flow's internal handle registry
+      updateNodeInternals(id);
+
+      // Wait longer for React Flow to fully process and register the handles
+      // This delay is critical to prevent "Couldn't create edge" errors
+      const timeoutId = setTimeout(() => {
+        if (data.onVisiblePortsChange) {
+          // Recalculate visible inputs/outputs based on current page
+          const currentVisibleInputs = sortedInputs.slice(
+            inputPage * ITEMS_PER_PAGE,
+            (inputPage + 1) * ITEMS_PER_PAGE
+          );
+          const currentVisibleOutputs = sortedOutputs.slice(
+            outputPage * ITEMS_PER_PAGE,
+            (outputPage + 1) * ITEMS_PER_PAGE
+          );
+
+          const visibleInputIds = currentVisibleInputs.map(input => input.id);
+          const visibleOutputIds = currentVisibleOutputs.map(output => output.id);
+          data.onVisiblePortsChange(visibleInputIds, visibleOutputIds);
+        }
+      }, 1); // 1ms delay ensures proper execution order
+
+      return () => clearTimeout(timeoutId);
+    } else if (!data.expanded && data.onVisiblePortsChange) {
+      // When collapsed, clear visible ports immediately
+      data.onVisiblePortsChange([], []);
     }
-  }, [inputPage, outputPage, data.expanded]);
+  }, [id, inputPage, outputPage, data.expanded, updateNodeInternals]);
 
   return (
     <div
