@@ -39,6 +39,7 @@ function FlowCanvas() {
   const [relationships, setRelationships] = useState([]); // Store relationships from API
   const [selectedNode, setSelectedNode] = useState(null); // Track selected port for edge highlighting
   const [expandedNodes, setExpandedNodes] = useState({});
+  const [previousExpandedCount, setPreviousExpandedCount] = useState(0); // Track expansion changes
   const [visiblePorts, setVisiblePorts] = useState({}); // Track visible ports per node
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -264,15 +265,24 @@ function FlowCanvas() {
     }));
   }, []);
 
-  // Update layout when expansion state changes
+  // Update layout only when expanding, not when collapsing
   useEffect(() => {
-    const updateLayout = async () => {
-      if (edges.length > 0) {
-        const layoutedNodes = await calculateLayout(nodes, edges, expandedNodes);
-        setNodes(layoutedNodes);
-      }
-    };
-    updateLayout();
+    const currentExpandedCount = Object.values(expandedNodes).filter(Boolean).length;
+
+    // Only recalculate layout if we're expanding (count increased)
+    // Don't recalculate when collapsing (count decreased) to preserve positions
+    if (currentExpandedCount > previousExpandedCount) {
+      const updateLayout = async () => {
+        if (edges.length > 0) {
+          const layoutedNodes = await calculateLayout(nodes, edges, expandedNodes);
+          setNodes(layoutedNodes);
+        }
+      };
+      updateLayout();
+    }
+
+    // Update the previous count for next comparison
+    setPreviousExpandedCount(currentExpandedCount);
   }, [expandedNodes]);
 
   // Add callbacks to dataproduct nodes
