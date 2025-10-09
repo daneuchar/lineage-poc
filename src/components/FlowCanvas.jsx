@@ -331,7 +331,6 @@ function FlowCanvas() {
         edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-       ```
         onError={onError}
         nodeTypes={nodeTypes}
         fitView
