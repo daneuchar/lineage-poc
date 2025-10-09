@@ -161,10 +161,7 @@ function FlowCanvas() {
     loadFlowData();
   }, [setNodes, calculateLayout]);
 
-  const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
+ 
 
   // Suppress handle-related errors during pagination transitions
   const onError = useCallback((code, message) => {
@@ -334,7 +331,7 @@ function FlowCanvas() {
         edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+       ```
         onError={onError}
         nodeTypes={nodeTypes}
         fitView

@@ -133,7 +133,7 @@ function DataProductNode({ id, data }) {
       // When collapsed, clear visible ports immediately
       data.onVisiblePortsChange([], []);
     }
-  }, [id, inputPage, outputPage, data.expanded, updateNodeInternals]);
+  }, [id, inputPage, outputPage, data.expanded, updateNodeInternals, relatedPorts]);
 
   return (
     <div
