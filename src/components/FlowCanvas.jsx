@@ -8,6 +8,7 @@ import {
   useEdgesState,
   addEdge,
   useReactFlow,
+  ControlButton,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -16,15 +17,7 @@ import GroupNode from "./GroupNode";
 import InputGroupNode from "./InputGroupNode";
 import { mockApi } from "../services/mockApi";
 import { getLayoutedNodes } from "../utils/layoutUtils";
-import {
-  getDataProductForGroup,
-  getDataProductForInputGroup,
-  getDependentDataProducts,
-  getDependencyDataProducts,
-  hasConnectingEdges as checkConnectingEdges,
-  getInputGroupsConnectedToGroup,
-  getGroupsConnectedToInputGroup,
-} from "../utils/graphUtils";
+
 
 const nodeTypes = {
   dataproduct: DataProductNode,
@@ -43,6 +36,7 @@ function FlowCanvas() {
   const [visiblePorts, setVisiblePorts] = useState({}); // Track visible ports per node
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showBackground, setShowBackground] = useState(false); // Track background visibility
 
   // Calculate layout using ELK
   const calculateLayout = useCallback(async (nodes, edges, expandedNodes) => {
@@ -362,9 +356,26 @@ function FlowCanvas() {
           pathOptions: { borderRadius: 20 },
         }}
       >
-        <Controls />
+        
+        <Controls >
+          <ControlButton onClick={() => setShowBackground(!showBackground)} title={showBackground ? "Hide Grid" : "Show Grid"}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {showBackground ? (
+                <rect x="2" y="2" width="12" height="12" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              ) : (
+                <>
+                  <rect x="2" y="2" width="5" height="5" fill="currentColor" />
+                  <rect x="9" y="2" width="5" height="5" fill="currentColor" />
+                  <rect x="2" y="9" width="5" height="5" fill="currentColor" />
+                  <rect x="9" y="9" width="5" height="5" fill="currentColor" />
+                </>
+              )}
+            </svg>
+          </ControlButton>
+          
+          </Controls>
         <MiniMap />
-        <Background variant="dots" gap={12} size={1} />
+        {showBackground && <Background variant="dots" gap={12} size={1} />}
       </ReactFlow>
     </div>
   );
