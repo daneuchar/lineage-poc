@@ -223,21 +223,8 @@ function FlowCanvas() {
               });
             }
           }, 100);
-        } else {
-          // Just center on the collapsed node
-          setTimeout(() => {
-            const node = getNode(nodeId);
-            if (node) {
-              fitView({
-                nodes: [node],
-                duration: 800,
-                padding: 0.3,
-                minZoom: 0.8,
-                maxZoom: 1.2,
-              });
-            }
-          }, 100);
         }
+        // When collapsing, do not center - keep current viewport position
 
         return newState;
       });
