@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useState, useEffect } from 'react';
 
@@ -138,6 +139,10 @@ function DataProductNode({ id, data }) {
     <div
       className={`dataproduct-node ${data.selected ? 'selected' : ''} ${data.expanded ? 'expanded' : 'collapsed'}`}
     >
+      <Box className="dataproduct-tag">
+        <svg className="animate-pulse" xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none" viewBox="0 0 12 12"><g><circle cx="6" cy="6" r=".8" fill="#75777C"></circle><circle cx="6" cy="6" r="5" stroke="#75777C" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.1"></circle><circle cx="6" cy="6" r="2.5" stroke="#75777C" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.1"></circle></g></svg>
+        <span>DataProduct</span>
+      </Box>
       {!data.expanded ? (
         <>
           <Handle type="target" position={Position.Left} />
