@@ -1,6 +1,10 @@
+:root{
+  --ubs-red: #e60000;
+  --ubs-white: #ffffff;
+}
 .dataproduct-node {
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ubs-red);
   border-radius: 0px 6px 6px 6px;
   padding: 8px 12px;
   min-width: 80px;
@@ -12,18 +16,17 @@
 
 .dataproduct-tag {
     position: absolute;
-    top: -15px;
+    top: -19px;
     left: -1px;
     display: flex;
     align-items: center;
     gap: 3px;
-    background: #f9fafb;
-    border: 1px solid #e5e6ea;
+    background: var(--ubs-red);
     border-radius: 3px 3px 0px 0px;
-    padding: 2px 5px;
-    font-size: 9px;
+    padding: 4px 6px;
+    font-size: 10px;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--ubs-white);
 }
 
 .dataproduct-tag svg {
@@ -37,6 +40,7 @@
 .dataproduct-node.collapsed {
   min-width: 80px;
   padding: 8px 12px;
+  width: 200px;
 }
 
 .dataproduct-node.expanded {
@@ -51,10 +55,28 @@
   background: #eff6ff;
 }
 
+.dataproduct-node .node-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dataproduct-node .node-content .node-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dataproduct-node .node-content .node-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
 .dataproduct-node .node-content h3 {
   margin: 0;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .dataproduct-node .node-content p {
@@ -80,6 +102,19 @@
   padding-bottom: 8px;
   margin-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
+  gap: 8px;
+}
+
+.dataproduct-header .header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dataproduct-header .node-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
 }
 
 .dataproduct-header h3 {
