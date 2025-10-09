@@ -32,7 +32,6 @@ function FlowCanvas() {
   const [relationships, setRelationships] = useState([]); // Store relationships from API
   const [selectedNode, setSelectedNode] = useState(null); // Track selected port for edge highlighting
   const [expandedNodes, setExpandedNodes] = useState({});
-  const [previousExpandedCount, setPreviousExpandedCount] = useState(0); // Track expansion changes
   const [visiblePorts, setVisiblePorts] = useState({}); // Track visible ports per node
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -139,10 +138,17 @@ function FlowCanvas() {
           }
         });
 
+        // Calculate layout assuming all nodes will be expanded for proper spacing
+        // This prevents overlapping when nodes expand for the first time
+        const assumeAllExpanded = {};
+        nodesWithDefaultPositions.forEach(node => {
+          assumeAllExpanded[node.id] = true;
+        });
+
         const layoutNodes = await calculateLayout(
           nodesWithDefaultPositions,
           initialEdges,
-          {}
+          assumeAllExpanded
         );
         setNodes(layoutNodes);
       } catch (err) {
@@ -250,25 +256,9 @@ function FlowCanvas() {
     }));
   }, []);
 
-  // Update layout only when expanding, not when collapsing
-  useEffect(() => {
-    const currentExpandedCount = Object.values(expandedNodes).filter(Boolean).length;
-
-    // Only recalculate layout if we're expanding (count increased)
-    // Don't recalculate when collapsing (count decreased) to preserve positions
-    if (currentExpandedCount > previousExpandedCount) {
-      const updateLayout = async () => {
-        if (edges.length > 0) {
-          const layoutedNodes = await calculateLayout(nodes, edges, expandedNodes);
-          setNodes(layoutedNodes);
-        }
-      };
-      updateLayout();
-    }
-
-    // Update the previous count for next comparison
-    setPreviousExpandedCount(currentExpandedCount);
-  }, [expandedNodes]);
+  // Note: We don't recalculate layout on expand/collapse
+  // Layout is only calculated once on initial load
+  // Nodes expand/collapse in place to preserve positions
 
   // Add callbacks to dataproduct nodes
   const nodesWithCallback = nodes.map((node) => {
