@@ -48,10 +48,14 @@ function FlowCanvas() {
     const builtEdges = [];
 
     relationships.forEach((rel) => {
-      // Direct node-to-node edges (shown when collapsed)
+      // Direct node-to-node edges (shown when at least one node is collapsed)
       if (rel.type === "direct") {
-        // Only show if both nodes are collapsed
-        if (!expandedNodes[rel.sourceNode] && !expandedNodes[rel.targetNode]) {
+        const sourceCollapsed = !expandedNodes[rel.sourceNode];
+        const targetCollapsed = !expandedNodes[rel.targetNode];
+
+        // Show direct edge if at least one node is collapsed
+        // (can't show port-to-port edges if one is collapsed)
+        if (sourceCollapsed || targetCollapsed) {
           builtEdges.push({
             id: `edge-${rel.id}`,
             source: rel.sourceNode,
@@ -62,7 +66,7 @@ function FlowCanvas() {
         }
       }
 
-      // Port-to-port edges (shown when expanded)
+      // Port-to-port edges (shown when both nodes are expanded)
       if (rel.type === "port") {
         // Only show if both nodes are expanded
         const bothExpanded = expandedNodes[rel.sourceNode] && expandedNodes[rel.targetNode];
