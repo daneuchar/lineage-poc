@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef, useMemo } from "react";
 import {
   ReactFlow,
   MiniMap,
@@ -17,6 +17,7 @@ import GroupNode from "./GroupNode";
 import InputGroupNode from "./InputGroupNode";
 import { mockApi } from "../services/mockApi";
 import { getLayoutedNodes } from "../utils/layoutUtils";
+import { findCompleteLineage, findNodeLineage } from "../utils/lineageUtils";
 
 
 const nodeTypes = {
@@ -36,6 +37,7 @@ function FlowCanvas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showBackground, setShowBackground] = useState(false); // Track background visibility
+  const [lineage, setLineage] = useState({ nodes: new Set(), edges: new Set(), ports: new Set() }); // Track lineage
 
   // Calculate layout using ELK
   const calculateLayout = useCallback(async (nodes, edges, expandedNodes) => {
@@ -235,13 +237,39 @@ function FlowCanvas() {
 
   const handlePortSelect = useCallback((portId) => {
     // Toggle selection: if clicking the same port, deselect it
-    setSelectedNode((prev) => (prev === portId ? null : portId));
-  }, []);
+    setSelectedNode((prev) => {
+      const newSelection = prev === portId ? null : portId;
+
+      // Calculate lineage for the selected port
+      if (newSelection) {
+        const lineageData = findCompleteLineage(newSelection, relationships, nodes);
+        setLineage(lineageData);
+      } else {
+        // Clear lineage when deselecting
+        setLineage({ nodes: new Set(), edges: new Set(), ports: new Set() });
+      }
+
+      return newSelection;
+    });
+  }, [relationships, nodes]);
 
   const handleNodeClick = useCallback((nodeId) => {
     // Toggle selection: if clicking the same node, deselect it
-    setSelectedNode((prev) => (prev === nodeId ? null : nodeId));
-  }, []);
+    setSelectedNode((prev) => {
+      const newSelection = prev === nodeId ? null : nodeId;
+
+      // Calculate lineage for the selected node (when collapsed)
+      if (newSelection) {
+        const lineageData = findNodeLineage(newSelection, relationships, nodes);
+        setLineage({ ...lineageData, ports: new Set() });
+      } else {
+        // Clear lineage when deselecting
+        setLineage({ nodes: new Set(), edges: new Set(), ports: new Set() });
+      }
+
+      return newSelection;
+    });
+  }, [relationships, nodes]);
 
   const handleVisiblePortsChange = useCallback((nodeId, visibleInputs, visibleOutputs) => {
     setVisiblePorts((prev) => ({
@@ -261,6 +289,7 @@ function FlowCanvas() {
   const nodesWithCallback = nodes.map((node) => {
     if (node.type === "dataproduct") {
       const expanded = expandedNodes[node.id];
+      const inLineage = lineage.nodes.has(node.id);
       return {
         ...node,
         data: {
@@ -272,33 +301,34 @@ function FlowCanvas() {
             handleVisiblePortsChange(node.id, visibleInputs, visibleOutputs),
           selected: selectedNode === node.id,
           expanded,
+          inLineage,
+          lineagePorts: lineage.ports,
         },
       };
     }
     return node;
   });
 
-  // Style edges based on selection
+  // Style edges based on lineage
   const styledEdges = edges.map((edge) => {
-    // Highlight edges connected to the selected port
-    const isConnectedToSelected = selectedNode && (
-      edge.source === selectedNode ||
-      edge.target === selectedNode ||
-      edge.sourceHandle === selectedNode ||
-      edge.targetHandle === selectedNode
-    );
+    const isInLineage = lineage.edges.has(edge.id);
+    const hasLineage = lineage.edges.size > 0;
+
+    // Determine if this is an upstream or downstream edge
+    // For coloring purposes, we'll use blue for all lineage edges for now
+    // You can enhance this later to differentiate upstream vs downstream
 
     return {
       ...edge,
       style: {
         ...edge.style,
-        stroke: isConnectedToSelected
-          ? "#3b82f6" // Highlighted color (blue)
+        stroke: isInLineage
+          ? "#3b82f6" // Lineage color (blue)
           : edge.style?.stroke || "#9ca3af", // Default or original color
-        strokeWidth: isConnectedToSelected ? 3 : edge.style?.strokeWidth || 1,
-        opacity: selectedNode && !isConnectedToSelected ? 0.3 : 1, // Dim non-connected edges
+        strokeWidth: isInLineage ? 3 : edge.style?.strokeWidth || 1,
+        opacity: hasLineage && !isInLineage ? 0.2 : 1, // Dim non-lineage edges when lineage is active
       },
-      animated: isConnectedToSelected, // Animate highlighted edges
+      animated: isInLineage, // Animate lineage edges
     };
   });
 

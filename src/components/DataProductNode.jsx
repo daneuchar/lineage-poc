@@ -137,7 +137,7 @@ function DataProductNode({ id, data }) {
 
   return (
     <div
-      className={`dataproduct-node ${data.selected ? 'selected' : ''} ${data.expanded ? 'expanded' : 'collapsed'}`}
+      className={`dataproduct-node ${data.selected ? 'selected' : ''} ${data.expanded ? 'expanded' : 'collapsed'} ${data.inLineage ? 'in-lineage' : ''}`}
     >
       <Box className="dataproduct-tag">
         <svg className="animate-pulse" xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none" viewBox="0 0 12 12"><g><circle cx="6" cy="6" r=".8" fill="var(--ubs-white)"></circle><circle cx="6" cy="6" r="5" stroke="var(--ubs-white)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.1"></circle><circle cx="6" cy="6" r="2.5" stroke="var(--ubs-white)" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.1"></circle></g></svg>
@@ -181,10 +181,12 @@ function DataProductNode({ id, data }) {
                 )}
               </div>
               <div className="ports-list">
-                {visibleInputs.map((input, index) => (
+                {visibleInputs.map((input, index) => {
+                  const isInLineage = data.lineagePorts && data.lineagePorts.has(input.id);
+                  return (
                   <div
                     key={input.id}
-                    className={`port-item ${selectedInput === input.id ? 'selected' : ''} ${relatedPorts.includes(input.id) ? 'related' : ''}`}
+                    className={`port-item ${selectedInput === input.id ? 'selected' : ''} ${relatedPorts.includes(input.id) ? 'related' : ''} ${isInLineage ? 'in-lineage' : ''}`}
                     onClick={(e) => handleInputClick(input, e)}
                   >
                     <Handle
@@ -195,7 +197,8 @@ function DataProductNode({ id, data }) {
                     />
                     <span className="port-label">{input.label}</span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {inputTotalPages > 1 && (
                 <div className="pagination-controls">
@@ -228,10 +231,12 @@ function DataProductNode({ id, data }) {
                 )}
               </div>
               <div className="ports-list">
-                {visibleOutputs.map((output, index) => (
+                {visibleOutputs.map((output, index) => {
+                  const isInLineage = data.lineagePorts && data.lineagePorts.has(output.id);
+                  return (
                   <div
                     key={output.id}
-                    className={`port-item ${selectedOutput === output.id ? 'selected' : ''} ${relatedPorts.includes(output.id) ? 'related' : ''}`}
+                    className={`port-item ${selectedOutput === output.id ? 'selected' : ''} ${relatedPorts.includes(output.id) ? 'related' : ''} ${isInLineage ? 'in-lineage' : ''}`}
                     onClick={(e) => handleOutputClick(output, e)}
                   >
                     <span className="port-label">{output.label}</span>
@@ -242,7 +247,8 @@ function DataProductNode({ id, data }) {
                       style={{ right: -5, top: '50%' }}
                     />
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {outputTotalPages > 1 && (
                 <div className="pagination-controls">

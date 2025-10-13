@@ -55,6 +55,12 @@
   background: #eff6ff;
 }
 
+.dataproduct-node.in-lineage {
+  border: 2px solid #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  background: #f0fdf4;
+}
+
 .dataproduct-node .node-content {
   display: flex;
   flex-direction: column;
@@ -209,6 +215,18 @@
 .port-item.related:hover {
   background: #fde68a;
   border-color: #d97706;
+}
+
+.port-item.in-lineage {
+  background: #d1fae5;
+  border-color: #10b981;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.port-item.in-lineage:hover {
+  background: #a7f3d0;
+  border-color: #059669;
 }
 
 .input-ports .port-item {
