@@ -314,6 +314,11 @@ function FlowCanvas() {
     const isInLineage = lineage.edges.has(edge.id);
     const hasLineage = lineage.edges.size > 0;
 
+    // Also check if edge is connected to a lineage node
+    const sourceInLineage = lineage.nodes.has(edge.source);
+    const targetInLineage = lineage.nodes.has(edge.target);
+    const connectedToLineageNode = sourceInLineage || targetInLineage;
+
     // Determine if this is an upstream or downstream edge
     // For coloring purposes, we'll use blue for all lineage edges for now
     // You can enhance this later to differentiate upstream vs downstream
@@ -323,12 +328,14 @@ function FlowCanvas() {
       style: {
         ...edge.style,
         stroke: isInLineage
-          ? "#3b82f6" // Lineage color (blue)
+          ? "#3b82f6" // Direct lineage color (blue)
+          : connectedToLineageNode && hasLineage
+          ? "#6b7280" // Connected to lineage node (gray)
           : edge.style?.stroke || "#9ca3af", // Default or original color
-        strokeWidth: isInLineage ? 3 : edge.style?.strokeWidth || 1,
-        opacity: hasLineage && !isInLineage ? 0.2 : 1, // Dim non-lineage edges when lineage is active
+        strokeWidth: isInLineage ? 3 : connectedToLineageNode && hasLineage ? 2 : edge.style?.strokeWidth || 1,
+        opacity: hasLineage && !isInLineage && !connectedToLineageNode ? 0.2 : hasLineage && connectedToLineageNode && !isInLineage ? 0.6 : 1,
       },
-      animated: isInLineage, // Animate lineage edges
+      animated: false, // No animation
     };
   });
 

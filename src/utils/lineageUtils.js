@@ -140,7 +140,7 @@ export function findUpstreamLineage(portId, maps) {
       const edges = portToEdges.get(currentPortId) || [];
       edges.forEach((edge) => {
         if (edge.type === 'port' && edge.targetPort === currentPortId) {
-          lineageEdges.add(edge.id);
+          lineageEdges.add(`edge-${edge.id}`);
           // Continue upstream from source port
           traverseUpstream(edge.sourcePort);
         }
@@ -192,7 +192,7 @@ export function findDownstreamLineage(portId, maps) {
       const edges = portToEdges.get(currentPortId) || [];
       edges.forEach((edge) => {
         if (edge.type === 'port' && edge.sourcePort === currentPortId) {
-          lineageEdges.add(edge.id);
+          lineageEdges.add(`edge-${edge.id}`);
           // Continue downstream to target port
           traverseDownstream(edge.targetPort);
         }
@@ -265,12 +265,12 @@ export function findNodeLineage(nodeId, relationships, nodes) {
     relationships.forEach((rel) => {
       if (rel.type === 'direct') {
         if (rel.sourceNode === currentNodeId) {
-          lineageEdges.add(rel.id);
+          lineageEdges.add(`edge-${rel.id}`);
           lineageNodes.add(rel.targetNode);
           traverse(rel.targetNode);
         }
         if (rel.targetNode === currentNodeId) {
-          lineageEdges.add(rel.id);
+          lineageEdges.add(`edge-${rel.id}`);
           lineageNodes.add(rel.sourceNode);
           traverse(rel.sourceNode);
         }
