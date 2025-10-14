@@ -54,31 +54,30 @@ function DataProductNode({ id, data }) {
   const inputs = data.inputs || [];
   const outputs = data.outputs || [];
 
-  // Update relatedPorts when selectedPortId changes
-  // Only show related ports if the selected port belongs to THIS node
+  // Update relatedPorts based on ALL ports in the lineage
+  // This ensures that when multiple ports are in the lineage, ALL their related ports are shown
   useEffect(() => {
-    if (!selectedPortId) {
-      setRelatedPorts([]);
-      return;
+    const allRelatedPorts = new Set();
+
+    // If there's a lineage, find all ports in this node that are part of the lineage
+    if (data.lineagePorts && data.lineagePorts.size > 0) {
+      // Check inputs - if any input is in lineage, add its related ports
+      inputs.forEach(input => {
+        if (data.lineagePorts.has(input.id)) {
+          (input.relatedPorts || []).forEach(portId => allRelatedPorts.add(portId));
+        }
+      });
+
+      // Check outputs - if any output is in lineage, add its related ports
+      outputs.forEach(output => {
+        if (data.lineagePorts.has(output.id)) {
+          (output.relatedPorts || []).forEach(portId => allRelatedPorts.add(portId));
+        }
+      });
     }
 
-    // Check if selected port is in this node's inputs
-    const selectedInput = inputs.find(input => input.id === selectedPortId);
-    if (selectedInput) {
-      setRelatedPorts(selectedInput.relatedPorts || []);
-      return;
-    }
-
-    // Check if selected port is in this node's outputs
-    const selectedOutput = outputs.find(output => output.id === selectedPortId);
-    if (selectedOutput) {
-      setRelatedPorts(selectedOutput.relatedPorts || []);
-      return;
-    }
-
-    // Selected port is not in this node, clear related ports
-    setRelatedPorts([]);
-  }, [selectedPortId, inputs, outputs]);
+    setRelatedPorts(Array.from(allRelatedPorts));
+  }, [data.lineagePorts, inputs, outputs]);
 
   // Sort ports so related ones appear first
   const sortedInputs = [...inputs].sort((a, b) => {
