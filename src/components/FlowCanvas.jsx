@@ -333,7 +333,7 @@ function FlowCanvas() {
           ? "#6b7280" // Connected to lineage node (gray)
           : edge.style?.stroke || "#9ca3af", // Default or original color
         strokeWidth: isInLineage ? 3 : connectedToLineageNode && hasLineage ? 2 : edge.style?.strokeWidth || 1,
-        opacity: hasLineage && !isInLineage && !connectedToLineageNode ? 0.2 : hasLineage && connectedToLineageNode && !isInLineage ? 0.6 : 1,
+        opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
       },
       animated: false, // No animation
     };
