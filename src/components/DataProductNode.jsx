@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 
 function DataProductNode({ id, data }) {
   const updateNodeInternals = useUpdateNodeInternals();
-  const [selectedInput, setSelectedInput] = useState(null);
-  const [selectedOutput, setSelectedOutput] = useState(null);
   const [relatedPorts, setRelatedPorts] = useState([]); // Track related ports for highlighting
   const [inputPage, setInputPage] = useState(0);
   const [outputPage, setOutputPage] = useState(0);
 
   const ITEMS_PER_PAGE = 5;
+
+  // Use globally selected port from parent (FlowCanvas)
+  const selectedPortId = data.selectedPortId;
 
   const handleToggleClick = (e) => {
     e.stopPropagation();
@@ -24,9 +25,7 @@ function DataProductNode({ id, data }) {
 
   const handleInputClick = (input, e) => {
     e.stopPropagation();
-    const newSelected = selectedInput === input.id ? null : input.id;
-    setSelectedInput(newSelected);
-    setSelectedOutput(null); // Clear output selection
+    const newSelected = selectedPortId === input.id ? null : input.id;
 
     // Set related ports for highlighting
     if (newSelected) {
@@ -42,9 +41,7 @@ function DataProductNode({ id, data }) {
 
   const handleOutputClick = (output, e) => {
     e.stopPropagation();
-    const newSelected = selectedOutput === output.id ? null : output.id;
-    setSelectedOutput(newSelected);
-    setSelectedInput(null); // Clear input selection
+    const newSelected = selectedPortId === output.id ? null : output.id;
 
     // Set related ports for highlighting
     if (newSelected) {
@@ -186,7 +183,7 @@ function DataProductNode({ id, data }) {
                   return (
                   <div
                     key={input.id}
-                    className={`port-item ${selectedInput === input.id ? 'selected' : ''} ${relatedPorts.includes(input.id) ? 'related' : ''} ${isInLineage ? 'in-lineage' : ''}`}
+                    className={`port-item ${selectedPortId === input.id ? 'selected' : ''} ${relatedPorts.includes(input.id) ? 'related' : ''} ${isInLineage ? 'in-lineage' : ''}`}
                     onClick={(e) => handleInputClick(input, e)}
                   >
                     <Handle
@@ -236,7 +233,7 @@ function DataProductNode({ id, data }) {
                   return (
                   <div
                     key={output.id}
-                    className={`port-item ${selectedOutput === output.id ? 'selected' : ''} ${relatedPorts.includes(output.id) ? 'related' : ''} ${isInLineage ? 'in-lineage' : ''}`}
+                    className={`port-item ${selectedPortId === output.id ? 'selected' : ''} ${relatedPorts.includes(output.id) ? 'related' : ''} ${isInLineage ? 'in-lineage' : ''}`}
                     onClick={(e) => handleOutputClick(output, e)}
                   >
                     <span className="port-label">{output.label}</span>

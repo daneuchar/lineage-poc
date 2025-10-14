@@ -300,6 +300,7 @@ function FlowCanvas() {
           onVisiblePortsChange: (visibleInputs, visibleOutputs) =>
             handleVisiblePortsChange(node.id, visibleInputs, visibleOutputs),
           selected: selectedNode === node.id,
+          selectedPortId: selectedNode, // Pass the globally selected port ID
           expanded,
           inLineage,
           lineagePorts: lineage.ports,
