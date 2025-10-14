@@ -13,8 +13,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import DataProductNode from "./DataProductNode";
-import GroupNode from "./GroupNode";
-import InputGroupNode from "./InputGroupNode";
+
 import { mockApi } from "../services/mockApi";
 import { getLayoutedNodes } from "../utils/layoutUtils";
 import { findCompleteLineage, findNodeLineage } from "../utils/lineageUtils";
@@ -22,8 +21,6 @@ import { findCompleteLineage, findNodeLineage } from "../utils/lineageUtils";
 
 const nodeTypes = {
   dataproduct: DataProductNode,
-  group: GroupNode,
-  inputGroup: InputGroupNode,
 };
 
 function FlowCanvas() {

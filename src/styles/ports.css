@@ -1,0 +1,143 @@
+/**
+ * Port Styles
+ * Styles for input/output ports, port items, and pagination controls
+ */
+
+.ports-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.ports-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-indicator {
+  font-size: 10px;
+  color: var(--gray-400);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.ports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Port Item Base Styles */
+.port-item {
+  position: relative;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 3px;
+  background: var(--port-bg);
+  border: 1px solid var(--port-border);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--port-text);
+  transition: all 0.2s ease;
+}
+
+.port-item:hover {
+  background: var(--port-hover-bg);
+  border-color: var(--port-hover-border);
+}
+
+/* Port Item States */
+.port-item.selected {
+  background: var(--port-selected-bg) !important;
+  border-color: var(--port-selected-border) !important;
+  color: var(--port-selected-text) !important;
+  font-weight: 600;
+}
+
+.port-item.related {
+  background: var(--port-related-bg);
+  border-color: var(--port-related-border);
+  color: var(--port-related-text);
+}
+
+.port-item.related:hover {
+  background: var(--port-related-hover-bg);
+  border-color: var(--port-related-hover-border);
+}
+
+.port-item.in-lineage {
+  background: var(--lineage-port-bg);
+  border-color: var(--lineage-port-border);
+  color: var(--lineage-port-text);
+  font-weight: 600;
+}
+
+.port-item.in-lineage:hover {
+  background: var(--lineage-port-hover-bg);
+  border-color: var(--lineage-port-hover-border);
+}
+
+/* Port Positioning */
+.input-ports .port-item {
+  padding-left: 12px;
+}
+
+.output-ports .port-item {
+  padding-right: 12px;
+  justify-content: flex-end;
+}
+
+.port-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.pagination-button {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 3px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--gray-500);
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  padding: 0;
+  outline: none;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+  color: var(--gray-700);
+}
+
+.pagination-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

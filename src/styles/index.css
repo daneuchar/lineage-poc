@@ -1,0 +1,23 @@
+/**
+ * Main Stylesheet Index
+ * Imports all CSS modules in the correct order
+ *
+ * Order matters:
+ * 1. Variables must be loaded first (used by all other modules)
+ * 2. Component-specific styles
+ * 3. Library overrides
+ * 4. Layout/utilities last
+ */
+
+/* CSS Variables - Must be first */
+@import './variables.css';
+
+/* Component Styles */
+@import './dataproduct-node.css';
+@import './ports.css';
+
+/* React Flow Library Overrides */
+@import './react-flow.css';
+
+/* Layout & Utilities */
+@import './layout.css';

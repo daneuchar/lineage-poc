@@ -1,0 +1,74 @@
+/**
+ * Layout Styles
+ * Container layouts, loading states, error states
+ */
+
+/* Main Flow Container */
+.flow-container {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Loading State */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-loading);
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--gray-200);
+  border-top: 2px solid var(--blue-400);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+/* Error State */
+.error-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-loading);
+}
+
+.error-content {
+  text-align: center;
+  padding: 20px;
+  background: var(--error-bg);
+  border-radius: 8px;
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+}
+
+.error-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  font-size: 12px;
+}

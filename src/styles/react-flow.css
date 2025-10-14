@@ -1,0 +1,42 @@
+/**
+ * React Flow Library Overrides
+ * Custom styles for React Flow components (handles, minimap, controls)
+ */
+
+/* Handle Styles */
+.react-flow__handle {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--gray-400);
+  background: var(--gray-50);
+}
+
+.react-flow__handle-connecting {
+  background: var(--gray-500);
+}
+
+.react-flow__handle-valid {
+  background: var(--gray-500);
+}
+
+/* Minimap Styles */
+.react-flow__minimap {
+  background-color: var(--bg-minimap);
+}
+
+/* Controls Styles */
+.react-flow__controls {
+  background-color: var(--bg-controls);
+  border: 1px solid var(--border-controls);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+.react-flow__controls-button {
+  border-bottom: 1px solid var(--border-controls);
+  padding: 8px;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--bg-controls-hover);
+}
