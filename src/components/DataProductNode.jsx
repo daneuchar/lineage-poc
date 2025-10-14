@@ -27,13 +27,6 @@ function DataProductNode({ id, data }) {
     e.stopPropagation();
     const newSelected = selectedPortId === input.id ? null : input.id;
 
-    // Set related ports for highlighting
-    if (newSelected) {
-      setRelatedPorts(input.relatedPorts || []);
-    } else {
-      setRelatedPorts([]);
-    }
-
     if (data.onPortSelect) {
       data.onPortSelect(newSelected);
     }
@@ -42,13 +35,6 @@ function DataProductNode({ id, data }) {
   const handleOutputClick = (output, e) => {
     e.stopPropagation();
     const newSelected = selectedPortId === output.id ? null : output.id;
-
-    // Set related ports for highlighting
-    if (newSelected) {
-      setRelatedPorts(output.relatedPorts || []);
-    } else {
-      setRelatedPorts([]);
-    }
 
     if (data.onPortSelect) {
       data.onPortSelect(newSelected);
@@ -67,6 +53,32 @@ function DataProductNode({ id, data }) {
 
   const inputs = data.inputs || [];
   const outputs = data.outputs || [];
+
+  // Update relatedPorts when selectedPortId changes
+  // Only show related ports if the selected port belongs to THIS node
+  useEffect(() => {
+    if (!selectedPortId) {
+      setRelatedPorts([]);
+      return;
+    }
+
+    // Check if selected port is in this node's inputs
+    const selectedInput = inputs.find(input => input.id === selectedPortId);
+    if (selectedInput) {
+      setRelatedPorts(selectedInput.relatedPorts || []);
+      return;
+    }
+
+    // Check if selected port is in this node's outputs
+    const selectedOutput = outputs.find(output => output.id === selectedPortId);
+    if (selectedOutput) {
+      setRelatedPorts(selectedOutput.relatedPorts || []);
+      return;
+    }
+
+    // Selected port is not in this node, clear related ports
+    setRelatedPorts([]);
+  }, [selectedPortId, inputs, outputs]);
 
   // Sort ports so related ones appear first
   const sortedInputs = [...inputs].sort((a, b) => {
