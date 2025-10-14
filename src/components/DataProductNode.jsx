@@ -141,10 +141,26 @@ function DataProductNode({ id, data }) {
               <Tooltip title="Euchar, Daniel" arrow>
                 <Avatar className="node-avatar">{data.avatar || 'ED'}</Avatar>
               </Tooltip>
-              <h3>{data.label || 'Data Product'}</h3>
+              <div className="title-content">
+                <h3>{data.label || 'Data Product'}</h3>
+                <div className="port-badges">
+                  <span className="port-badge input-badge">
+                    <span className="badge-dot"></span>
+                    {inputs.length} in
+                  </span>
+                  <span className="port-badge output-badge">
+                    <span className="badge-dot"></span>
+                    {outputs.length} out
+                  </span>
+                </div>
+              </div>
             </div>
-            <Divider />
-            <div className="node-status" onClick={handleToggleClick}>► Click to expand</div>
+            <button className="expand-button" onClick={handleToggleClick}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Expand
+            </button>
           </div>
         </>
       ) : (
@@ -156,7 +172,12 @@ function DataProductNode({ id, data }) {
               </Tooltip>
               <h3>{data.label || 'Data Product'}</h3>
             </div>
-            <div className="node-status" onClick={handleToggleClick}>▼ Click to collapse</div>
+            <button className="collapse-button" onClick={handleToggleClick}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M9 7.5L6 4.5L3 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Collapse
+            </button>
           </div>
           <div className="dataproduct-ports">
             {/* Input Ports Section */}
