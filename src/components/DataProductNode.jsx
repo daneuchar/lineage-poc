@@ -54,45 +54,26 @@ function DataProductNode({ id, data }) {
   const inputs = data.inputs || [];
   const outputs = data.outputs || [];
 
-  // Update relatedPorts based on ALL ports in the lineage
-  // This ensures that when multiple ports are in the lineage, ALL their related ports are shown
+  // Disable related ports highlighting - only show in-lineage ports (green)
   useEffect(() => {
-    const allRelatedPorts = new Set();
-
-    // If there's a lineage, find all ports in this node that are part of the lineage
-    if (data.lineagePorts && data.lineagePorts.size > 0) {
-      // Check inputs - if any input is in lineage, add its related ports
-      inputs.forEach(input => {
-        if (data.lineagePorts.has(input.id)) {
-          (input.relatedPorts || []).forEach(portId => allRelatedPorts.add(portId));
-        }
-      });
-
-      // Check outputs - if any output is in lineage, add its related ports
-      outputs.forEach(output => {
-        if (data.lineagePorts.has(output.id)) {
-          (output.relatedPorts || []).forEach(portId => allRelatedPorts.add(portId));
-        }
-      });
-    }
-
-    setRelatedPorts(Array.from(allRelatedPorts));
+    // Keep relatedPorts empty to disable yellow highlighting
+    setRelatedPorts([]);
   }, [data.lineagePorts, inputs, outputs]);
 
-  // Sort ports so related ones appear first
+  // Sort ports so lineage ports appear first
   const sortedInputs = [...inputs].sort((a, b) => {
-    const aIsRelated = relatedPorts.includes(a.id);
-    const bIsRelated = relatedPorts.includes(b.id);
-    if (aIsRelated && !bIsRelated) return -1;
-    if (!aIsRelated && bIsRelated) return 1;
+    const aIsInLineage = data.lineagePorts && data.lineagePorts.has(a.id);
+    const bIsInLineage = data.lineagePorts && data.lineagePorts.has(b.id);
+    if (aIsInLineage && !bIsInLineage) return -1;
+    if (!aIsInLineage && bIsInLineage) return 1;
     return 0;
   });
 
   const sortedOutputs = [...outputs].sort((a, b) => {
-    const aIsRelated = relatedPorts.includes(a.id);
-    const bIsRelated = relatedPorts.includes(b.id);
-    if (aIsRelated && !bIsRelated) return -1;
-    if (!aIsRelated && bIsRelated) return 1;
+    const aIsInLineage = data.lineagePorts && data.lineagePorts.has(a.id);
+    const bIsInLineage = data.lineagePorts && data.lineagePorts.has(b.id);
+    if (aIsInLineage && !bIsInLineage) return -1;
+    if (!aIsInLineage && bIsInLineage) return 1;
     return 0;
   });
 
@@ -141,7 +122,7 @@ function DataProductNode({ id, data }) {
       // When collapsed, clear visible ports immediately
       data.onVisiblePortsChange([], []);
     }
-  }, [id, inputPage, outputPage, data.expanded, updateNodeInternals, relatedPorts]);
+  }, [id, inputPage, outputPage, data.expanded, updateNodeInternals, data.lineagePorts]);
 
   return (
     <div
