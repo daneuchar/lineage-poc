@@ -16,7 +16,7 @@ export const mockApi = {
             id: "dataproduct-1",
             type: "dataproduct",
             data: {
-              label: "Data Product 1",
+              label: "WMA Account",
               inputs: [
                 { id: "dp1-input-1", label: "Raw Data", relatedPorts: ["dp1-output-1", "dp1-output-5"] },
                 { id: "dp1-input-2", label: "User Events", relatedPorts: ["dp1-output-1", "dp1-output-2"] },
@@ -43,7 +43,7 @@ export const mockApi = {
             id: "dataproduct-2",
             type: "dataproduct",
             data: {
-              label: "Data Product 2",
+              label: "WMA Analytics",
               inputs: [
                 { id: "dp2-input-1", label: "Web Data", relatedPorts: ["dp2-output-1", "dp2-output-2"] },
                 { id: "dp2-input-2", label: "Mobile Data", relatedPorts: ["dp2-output-1", "dp2-output-2"] },
@@ -67,7 +67,7 @@ export const mockApi = {
             id: "dataproduct-3",
             type: "dataproduct",
             data: {
-              label: "Data Product 3",
+              label: "WMA Insights",
               inputs: [
                 { id: "dp3-input-1", label: "Reports Data", relatedPorts: ["dp3-output-1", "dp3-output-4"] },
                 { id: "dp3-input-2", label: "Dashboard Data", relatedPorts: ["dp3-output-1", "dp3-output-4"] },
