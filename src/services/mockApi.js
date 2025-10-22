@@ -93,21 +93,21 @@ export const mockApi = {
             sourceNode: "dataproduct-1",
             targetNode: "dataproduct-2",
             type: "direct",
-            style: { stroke: "#3b82f6" },
+            
           },
           {
             id: "rel-dp2-to-dp3",
             sourceNode: "dataproduct-2",
             targetNode: "dataproduct-3",
             type: "direct",
-            style: { stroke: "#10b981" },
+            
           },
           {
             id: "rel-dp1-to-dp3",
             sourceNode: "dataproduct-1",
             targetNode: "dataproduct-3",
             type: "direct",
-            style: { stroke: "#8b5cf6" },
+            
           },
           // Port-to-port relationships (shown when expanded)
           // DP1 to DP2 connections
@@ -118,7 +118,7 @@ export const mockApi = {
             targetNode: "dataproduct-2",
             targetPort: "dp2-input-1",
             type: "port",
-            style: { stroke: "#3b82f6" },
+            
           },
           {
             id: "rel-dp1-out2-to-dp2-in2",
@@ -127,7 +127,7 @@ export const mockApi = {
             targetNode: "dataproduct-2",
             targetPort: "dp2-input-2",
             type: "port",
-            style: { stroke: "#3b82f6" },
+            
           },
           {
             id: "rel-dp1-out3-to-dp2-in3",
@@ -136,7 +136,7 @@ export const mockApi = {
             targetNode: "dataproduct-2",
             targetPort: "dp2-input-3",
             type: "port",
-            style: { stroke: "#3b82f6" },
+            
           },
           {
             id: "rel-dp1-out5-to-dp2-in5",
@@ -145,7 +145,7 @@ export const mockApi = {
             targetNode: "dataproduct-2",
             targetPort: "dp2-input-5",
             type: "port",
-            style: { stroke: "#3b82f6" },
+            
           },
           // DP2 to DP3 connections
           {
@@ -155,7 +155,7 @@ export const mockApi = {
             targetNode: "dataproduct-3",
             targetPort: "dp3-input-1",
             type: "port",
-            style: { stroke: "#10b981" },
+            
           },
           {
             id: "rel-dp2-out2-to-dp3-in2",
@@ -164,7 +164,7 @@ export const mockApi = {
             targetNode: "dataproduct-3",
             targetPort: "dp3-input-2",
             type: "port",
-            style: { stroke: "#10b981" },
+            
           },
           {
             id: "rel-dp2-out3-to-dp3-in3",
@@ -173,7 +173,7 @@ export const mockApi = {
             targetNode: "dataproduct-3",
             targetPort: "dp3-input-3",
             type: "port",
-            style: { stroke: "#10b981" },
+            
           },
           // DP1 to DP3 direct connection
           {
@@ -183,7 +183,7 @@ export const mockApi = {
             targetNode: "dataproduct-3",
             targetPort: "dp3-input-4",
             type: "port",
-            style: { stroke: "#8b5cf6" },
+            
           },
           {
             id: "rel-dp1-out8-to-dp3-in6",
@@ -192,7 +192,7 @@ export const mockApi = {
             targetNode: "dataproduct-3",
             targetPort: "dp3-input-6",
             type: "port",
-            style: { stroke: "#8b5cf6" },
+            
           },
         ],
       };
