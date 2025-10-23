@@ -123,6 +123,17 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
     loadColumnLineage();
   }, [initialPortId, setNodes]);
 
+  // Fit view after nodes are loaded
+  useEffect(() => {
+    if (!loading && nodes.length > 0) {
+      // Small delay to ensure nodes are rendered
+      const timeoutId = setTimeout(() => {
+        fitView({ padding: 0.2, duration: 800 });
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [loading, nodes.length, fitView]);
+
   // Helper function to find port ID for a column ID during initial load
   const getPortIdForColumnInData = (columnId, data) => {
     if (!data) return null;
@@ -277,22 +288,30 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
     };
   });
 
-  // Style edges based on lineage
-  const styledEdges = edges.map((edge) => {
-    const isInLineage = lineage.edges.has(edge.id);
-    const hasLineage = lineage.edges.size > 0;
+  // Style edges based on lineage and sort so lineage edges render on top
+  const styledEdges = edges
+    .map((edge) => {
+      const isInLineage = lineage.edges.has(edge.id);
+      const hasLineage = lineage.edges.size > 0;
 
-    return {
-      ...edge,
-      style: {
-        ...edge.style,
-        stroke: isInLineage ? "#3b82f6" : "#9ca3af",
-        strokeWidth: isInLineage ? 3 : 2,
-        opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
-      },
-      animated: false,
-    };
-  });
+      return {
+        ...edge,
+        style: {
+          ...edge.style,
+          stroke: isInLineage ? "#3b82f6" : "#9ca3af",
+          strokeWidth: isInLineage ? 3 : 2,
+          opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
+        },
+        animated: false,
+        isInLineage, // Add flag for sorting
+      };
+    })
+    .sort((a, b) => {
+      // Sort so lineage edges render last (on top)
+      if (a.isInLineage && !b.isInLineage) return 1;
+      if (!a.isInLineage && b.isInLineage) return -1;
+      return 0;
+    });
 
   if (loading) {
     return (
@@ -355,12 +374,6 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
           onEdgesChange={onEdgesChange}
           onError={onError}
           nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{
-            padding: 0.2,
-            includeHiddenNodes: false,
-            duration: 800,
-          }}
           defaultEdgeOptions={{
             type: 'default',
             animated: false,

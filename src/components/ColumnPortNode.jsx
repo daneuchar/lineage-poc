@@ -52,18 +52,9 @@ function ColumnPortNode({ id, data }) {
 
   const columns = data.columns || [];
 
-  // Sort columns so lineage columns appear first
-  const sortedColumns = [...columns].sort((a, b) => {
-    const aIsInLineage = data.lineageColumns && data.lineageColumns.has(a.id);
-    const bIsInLineage = data.lineageColumns && data.lineageColumns.has(b.id);
-    if (aIsInLineage && !bIsInLineage) return -1;
-    if (!aIsInLineage && bIsInLineage) return 1;
-    return 0;
-  });
-
-  // Calculate pagination
-  const totalPages = Math.ceil(sortedColumns.length / ITEMS_PER_PAGE);
-  const visibleColumns = sortedColumns.slice(
+  // Calculate pagination - use original column order
+  const totalPages = Math.ceil(columns.length / ITEMS_PER_PAGE);
+  const visibleColumns = columns.slice(
     columnPage * ITEMS_PER_PAGE,
     (columnPage + 1) * ITEMS_PER_PAGE
   );
@@ -75,18 +66,13 @@ function ColumnPortNode({ id, data }) {
 
     const timeoutId = setTimeout(() => {
       if (data.onVisibleColumnsChange) {
-        // Recalculate visible columns based on current page state
-        const currentVisibleColumns = sortedColumns.slice(
-          columnPage * ITEMS_PER_PAGE,
-          (columnPage + 1) * ITEMS_PER_PAGE
-        );
-        const visibleColumnIds = currentVisibleColumns.map(col => col.id);
+        const visibleColumnIds = visibleColumns.map(col => col.id);
         data.onVisibleColumnsChange(visibleColumnIds);
       }
     }, 1); // 1ms delay ensures proper execution order
 
     return () => clearTimeout(timeoutId);
-  }, [id, columnPage, updateNodeInternals]); // Only depend on stable values and columnPage
+  }, [id, columnPage, updateNodeInternals, visibleColumns, data]); // Depend on visibleColumns
 
   const isSelected = data.selected || false;
   const isInLineage = data.inLineage || false;
@@ -96,10 +82,6 @@ function ColumnPortNode({ id, data }) {
     <div
       className={`column-port-node ${isSelected ? 'selected' : ''} ${isInLineage ? 'in-lineage' : ''}`}
     >
-      {/* Handles for port-to-port connections */}
-      {data.portType === 'input' && <Handle type="target" position={Position.Left} id={`port-${data.portId}`} />}
-      {data.portType === 'output' && <Handle type="source" position={Position.Right} id={`port-${data.portId}`} />}
-
       <div className="column-port-header">
         <div className="port-info">
           <div className="port-title-row">
