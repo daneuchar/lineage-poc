@@ -73,6 +73,9 @@ const getNodeWidth = (node, expandedNodes) => {
     const isExpanded = expandedNodes[node.id];
     return isExpanded ? 420 : 120;
   }
+  if (node.type === 'columnport') {
+    return 350; // Fixed width for column port nodes (between min 320px and max 420px)
+  }
   return 150; // Default width
 };
 
@@ -102,6 +105,19 @@ const getNodeHeight = (node, expandedNodes) => {
     // header (50) + port header (30) + items (28 each) + pagination (36 if needed) + padding (20)
     const paginationHeight = needsPagination ? 36 : 0;
     return 100 + (maxVisiblePorts * 28) + paginationHeight;
+  }
+  if (node.type === 'columnport') {
+    // Calculate height based on number of columns with pagination
+    const columnCount = node.data?.columns?.length || 0;
+    const ITEMS_PER_PAGE = 5;
+
+    // Show max 5 items per page
+    const visibleColumns = Math.min(columnCount, ITEMS_PER_PAGE);
+    const needsPagination = columnCount > ITEMS_PER_PAGE;
+
+    // header (60) + section padding (20) + column items (49px each) + pagination (32 if needed)
+    const paginationHeight = needsPagination ? 32 : 0;
+    return 80 + (visibleColumns * 49) + paginationHeight;
   }
   return 100; // Default height
 };

@@ -202,5 +202,207 @@ export const mockApi = {
     return response.json();
   },
 
+  // Get column lineage for a specific port
+  async getColumnLineage(portId) {
+    if (this.useMockApi) {
+      await this.delay(600); // Simulate network delay
+
+      // Column data mapping for all ports
+      const columnData = {
+        // DP1 Output ports
+        "dp1-output-1": {
+          portId: "dp1-output-1",
+          portLabel: "Web App",
+          nodeId: "dataproduct-1",
+          nodeLabel: "WMA Account",
+          columns: [
+            { id: "dp1-out1-col-1", name: "customer_id", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: true, description: "Unique customer identifier" },
+            { id: "dp1-out1-col-2", name: "session_id", dataType: "VARCHAR(100)", nullable: false, isPrimaryKey: false, description: "User session identifier" },
+            { id: "dp1-out1-col-3", name: "page_url", dataType: "TEXT", nullable: true, isPrimaryKey: false, description: "Current page URL" },
+            { id: "dp1-out1-col-4", name: "timestamp", dataType: "TIMESTAMP", nullable: false, isPrimaryKey: false, description: "Event timestamp" },
+            { id: "dp1-out1-col-5", name: "user_agent", dataType: "TEXT", nullable: true, isPrimaryKey: false, description: "Browser user agent" },
+            { id: "dp1-out1-col-6", name: "ip_address", dataType: "VARCHAR(45)", nullable: true, isPrimaryKey: false, description: "Client IP address" },
+          ],
+        },
+        "dp1-output-5": {
+          portId: "dp1-output-5",
+          portLabel: "Database",
+          nodeId: "dataproduct-1",
+          nodeLabel: "WMA Account",
+          columns: [
+            { id: "dp1-out5-col-1", name: "record_id", dataType: "BIGINT", nullable: false, isPrimaryKey: true, description: "Database record ID" },
+            { id: "dp1-out5-col-2", name: "customer_id", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Customer reference" },
+            { id: "dp1-out5-col-3", name: "data_payload", dataType: "JSONB", nullable: true, isPrimaryKey: false, description: "Raw data payload" },
+            { id: "dp1-out5-col-4", name: "created_at", dataType: "TIMESTAMP", nullable: false, isPrimaryKey: false, description: "Record creation time" },
+            { id: "dp1-out5-col-5", name: "updated_at", dataType: "TIMESTAMP", nullable: true, isPrimaryKey: false, description: "Last update time" },
+          ],
+        },
+
+        // DP2 Input ports
+        "dp2-input-1": {
+          portId: "dp2-input-1",
+          portLabel: "Web Data",
+          nodeId: "dataproduct-2",
+          nodeLabel: "WMA Analytics",
+          columns: [
+            { id: "dp2-in1-col-1", name: "customer_id", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Customer identifier from web" },
+            { id: "dp2-in1-col-2", name: "session_id", dataType: "VARCHAR(100)", nullable: false, isPrimaryKey: false, description: "Session identifier" },
+            { id: "dp2-in1-col-3", name: "event_type", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Type of event" },
+            { id: "dp2-in1-col-4", name: "timestamp", dataType: "TIMESTAMP", nullable: false, isPrimaryKey: false, description: "Event time" },
+            { id: "dp2-in1-col-5", name: "page_url", dataType: "TEXT", nullable: true, isPrimaryKey: false, description: "Page URL" },
+          ],
+        },
+        "dp2-input-5": {
+          portId: "dp2-input-5",
+          portLabel: "Database Data",
+          nodeId: "dataproduct-2",
+          nodeLabel: "WMA Analytics",
+          columns: [
+            { id: "dp2-in5-col-1", name: "record_id", dataType: "BIGINT", nullable: false, isPrimaryKey: false, description: "Source record ID" },
+            { id: "dp2-in5-col-2", name: "customer_id", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Customer reference" },
+            { id: "dp2-in5-col-3", name: "data_payload", dataType: "JSONB", nullable: true, isPrimaryKey: false, description: "Data content" },
+            { id: "dp2-in5-col-4", name: "created_at", dataType: "TIMESTAMP", nullable: false, isPrimaryKey: false, description: "Creation timestamp" },
+          ],
+        },
+
+        // DP2 Output ports
+        "dp2-output-1": {
+          portId: "dp2-output-1",
+          portLabel: "Reports API",
+          nodeId: "dataproduct-2",
+          nodeLabel: "WMA Analytics",
+          columns: [
+            { id: "dp2-out1-col-1", name: "report_id", dataType: "UUID", nullable: false, isPrimaryKey: true, description: "Unique report identifier" },
+            { id: "dp2-out1-col-2", name: "customer_id", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Customer ID" },
+            { id: "dp2-out1-col-3", name: "report_type", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Type of report" },
+            { id: "dp2-out1-col-4", name: "metrics", dataType: "JSONB", nullable: false, isPrimaryKey: false, description: "Report metrics" },
+            { id: "dp2-out1-col-5", name: "generated_at", dataType: "TIMESTAMP", nullable: false, isPrimaryKey: false, description: "Report generation time" },
+          ],
+        },
+
+        // DP3 Input ports
+        "dp3-input-1": {
+          portId: "dp3-input-1",
+          portLabel: "Reports Data",
+          nodeId: "dataproduct-3",
+          nodeLabel: "WMA Insights",
+          columns: [
+            { id: "dp3-in1-col-1", name: "report_id", dataType: "UUID", nullable: false, isPrimaryKey: false, description: "Report reference" },
+            { id: "dp3-in1-col-2", name: "customer_id", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Customer identifier" },
+            { id: "dp3-in1-col-3", name: "report_type", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Report category" },
+            { id: "dp3-in1-col-4", name: "metrics", dataType: "JSONB", nullable: false, isPrimaryKey: false, description: "Metrics data" },
+          ],
+        },
+
+        // DP3 Output ports
+        "dp3-output-1": {
+          portId: "dp3-output-1",
+          portLabel: "Analytics",
+          nodeId: "dataproduct-3",
+          nodeLabel: "WMA Insights",
+          columns: [
+            { id: "dp3-out1-col-1", name: "insight_id", dataType: "UUID", nullable: false, isPrimaryKey: true, description: "Unique insight ID" },
+            { id: "dp3-out1-col-2", name: "customer_id", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Customer ID" },
+            { id: "dp3-out1-col-3", name: "insight_type", dataType: "VARCHAR(50)", nullable: false, isPrimaryKey: false, description: "Type of insight" },
+            { id: "dp3-out1-col-4", name: "confidence_score", dataType: "DECIMAL(5,2)", nullable: false, isPrimaryKey: false, description: "Confidence level" },
+            { id: "dp3-out1-col-5", name: "recommendations", dataType: "TEXT", nullable: true, isPrimaryKey: false, description: "AI recommendations" },
+          ],
+        },
+      };
+
+      // Column-to-column relationships (lineage)
+      const columnRelationships = [
+        // dp1-output-1 (Web App) to dp2-input-1 (Web Data)
+        { sourceColumn: "dp1-out1-col-1", targetColumn: "dp2-in1-col-1" }, // customer_id
+        { sourceColumn: "dp1-out1-col-2", targetColumn: "dp2-in1-col-2" }, // session_id
+        { sourceColumn: "dp1-out1-col-3", targetColumn: "dp2-in1-col-5" }, // page_url
+        { sourceColumn: "dp1-out1-col-4", targetColumn: "dp2-in1-col-4" }, // timestamp
+
+        // dp1-output-5 (Database) to dp2-input-5 (Database Data)
+        { sourceColumn: "dp1-out5-col-1", targetColumn: "dp2-in5-col-1" }, // record_id
+        { sourceColumn: "dp1-out5-col-2", targetColumn: "dp2-in5-col-2" }, // customer_id
+        { sourceColumn: "dp1-out5-col-3", targetColumn: "dp2-in5-col-3" }, // data_payload
+        { sourceColumn: "dp1-out5-col-4", targetColumn: "dp2-in5-col-4" }, // created_at
+
+        // dp2-output-1 (Reports API) to dp3-input-1 (Reports Data)
+        { sourceColumn: "dp2-out1-col-1", targetColumn: "dp3-in1-col-1" }, // report_id
+        { sourceColumn: "dp2-out1-col-2", targetColumn: "dp3-in1-col-2" }, // customer_id
+        { sourceColumn: "dp2-out1-col-3", targetColumn: "dp3-in1-col-3" }, // report_type
+        { sourceColumn: "dp2-out1-col-4", targetColumn: "dp3-in1-col-4" }, // metrics
+      ];
+
+      // Get the selected port data
+      const selectedPort = columnData[portId];
+      if (!selectedPort) {
+        throw new Error(`Port ${portId} not found`);
+      }
+
+      // Find upstream and downstream ports based on existing port relationships
+      const portRelationships = this.getFlowData().then(data => data.relationships);
+      const relationships = await portRelationships;
+
+      const upstreamPorts = [];
+      const downstreamPorts = [];
+
+      relationships.forEach(rel => {
+        if (rel.type === 'port') {
+          // If this port is a target, the source is upstream
+          if (rel.targetPort === portId && columnData[rel.sourcePort]) {
+            upstreamPorts.push(columnData[rel.sourcePort]);
+          }
+          // If this port is a source, the target is downstream
+          if (rel.sourcePort === portId && columnData[rel.targetPort]) {
+            downstreamPorts.push(columnData[rel.targetPort]);
+          }
+        }
+      });
+
+      // Build column lineage data structure
+      return {
+        selectedPort: {
+          ...selectedPort,
+          columns: selectedPort.columns.map(col => {
+            // Find upstream columns
+            const upstreamColumns = columnRelationships
+              .filter(rel => rel.targetColumn === col.id)
+              .map(rel => rel.sourceColumn);
+
+            // Find downstream columns
+            const downstreamColumns = columnRelationships
+              .filter(rel => rel.sourceColumn === col.id)
+              .map(rel => rel.targetColumn);
+
+            return {
+              ...col,
+              upstreamColumns,
+              downstreamColumns,
+            };
+          }),
+        },
+        upstreamPorts: upstreamPorts.map(port => ({
+          ...port,
+          columns: port.columns.map(col => {
+            const downstreamColumns = columnRelationships
+              .filter(rel => rel.sourceColumn === col.id)
+              .map(rel => rel.targetColumn);
+            return { ...col, downstreamColumns };
+          }),
+        })),
+        downstreamPorts: downstreamPorts.map(port => ({
+          ...port,
+          columns: port.columns.map(col => {
+            const upstreamColumns = columnRelationships
+              .filter(rel => rel.targetColumn === col.id)
+              .map(rel => rel.sourceColumn);
+            return { ...col, upstreamColumns };
+          }),
+        })),
+        columnRelationships,
+      };
+    }
+
+    const response = await fetch(`/api/column-lineage/${portId}`);
+    return response.json();
+  },
 
 };

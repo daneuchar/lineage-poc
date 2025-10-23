@@ -23,7 +23,7 @@ const nodeTypes = {
   dataproduct: DataProductNode,
 };
 
-function FlowCanvas() {
+function FlowCanvas({ onViewColumnLineage }) {
   const { fitView, getNode } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -296,6 +296,7 @@ function FlowCanvas() {
           onPortSelect: handlePortSelect,
           onVisiblePortsChange: (visibleInputs, visibleOutputs) =>
             handleVisiblePortsChange(node.id, visibleInputs, visibleOutputs),
+          onViewColumnLineage: onViewColumnLineage,
           selected: selectedNode === node.id,
           selectedPortId: selectedNode, // Pass the globally selected port ID
           expanded,

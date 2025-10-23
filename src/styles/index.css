@@ -15,9 +15,12 @@
 /* Component Styles */
 @import './dataproduct-node.css';
 @import './ports.css';
+@import './column-port-node.css';
+@import './columns.css';
 
 /* React Flow Library Overrides */
 @import './react-flow.css';
 
 /* Layout & Utilities */
 @import './layout.css';
+@import './column-lineage.css';

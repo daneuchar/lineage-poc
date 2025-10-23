@@ -7,6 +7,7 @@ function DataProductNode({ id, data }) {
   const [relatedPorts, setRelatedPorts] = useState([]); // Track related ports for highlighting
   const [inputPage, setInputPage] = useState(0);
   const [outputPage, setOutputPage] = useState(0);
+  const [openMenuPortId, setOpenMenuPortId] = useState(null); // Track which port's kebab menu is open
 
   const ITEMS_PER_PAGE = 5;
 
@@ -50,6 +51,30 @@ function DataProductNode({ id, data }) {
     e.stopPropagation();
     setOutputPage(prev => Math.max(0, Math.min(prev + delta, outputTotalPages - 1)));
   };
+
+  const handleKebabClick = (portId, e) => {
+    e.stopPropagation();
+    setOpenMenuPortId(openMenuPortId === portId ? null : portId);
+  };
+
+  const handleViewColumnLineage = (portId, e) => {
+    e.stopPropagation();
+    if (data.onViewColumnLineage) {
+      data.onViewColumnLineage(portId);
+    }
+    setOpenMenuPortId(null);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (openMenuPortId) {
+        setOpenMenuPortId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openMenuPortId]);
 
   const inputs = data.inputs || [];
   const outputs = data.outputs || [];
@@ -193,6 +218,7 @@ function DataProductNode({ id, data }) {
               <div className="ports-list">
                 {visibleInputs.map((input, index) => {
                   const isInLineage = data.lineagePorts && data.lineagePorts.has(input.id);
+                  const isMenuOpen = openMenuPortId === input.id;
                   return (
                   <div
                     key={input.id}
@@ -206,6 +232,36 @@ function DataProductNode({ id, data }) {
                       style={{ left: -5, top: '50%' }}
                     />
                     <span className="port-label">{input.label}</span>
+                    <div className="port-menu-container">
+                      <button
+                        className="port-kebab-button"
+                        onClick={(e) => handleKebabClick(input.id, e)}
+                        title="Port options"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <circle cx="8" cy="3" r="1.5" />
+                          <circle cx="8" cy="8" r="1.5" />
+                          <circle cx="8" cy="13" r="1.5" />
+                        </svg>
+                      </button>
+                      {isMenuOpen && (
+                        <div className="port-menu-dropdown">
+                          <button
+                            className="port-menu-item"
+                            onClick={(e) => handleViewColumnLineage(input.id, e)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <rect x="2" y="2" width="4" height="4" rx="1" />
+                              <rect x="10" y="2" width="4" height="4" rx="1" />
+                              <rect x="10" y="10" width="4" height="4" rx="1" />
+                              <line x1="6" y1="4" x2="10" y2="4" />
+                              <line x1="12" y1="6" x2="12" y2="10" />
+                            </svg>
+                            View Column Lineage
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   );
                 })}
@@ -243,6 +299,7 @@ function DataProductNode({ id, data }) {
               <div className="ports-list">
                 {visibleOutputs.map((output, index) => {
                   const isInLineage = data.lineagePorts && data.lineagePorts.has(output.id);
+                  const isMenuOpen = openMenuPortId === output.id;
                   return (
                   <div
                     key={output.id}
@@ -250,6 +307,36 @@ function DataProductNode({ id, data }) {
                     onClick={(e) => handleOutputClick(output, e)}
                   >
                     <span className="port-label">{output.label}</span>
+                    <div className="port-menu-container">
+                      <button
+                        className="port-kebab-button"
+                        onClick={(e) => handleKebabClick(output.id, e)}
+                        title="Port options"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <circle cx="8" cy="3" r="1.5" />
+                          <circle cx="8" cy="8" r="1.5" />
+                          <circle cx="8" cy="13" r="1.5" />
+                        </svg>
+                      </button>
+                      {isMenuOpen && (
+                        <div className="port-menu-dropdown">
+                          <button
+                            className="port-menu-item"
+                            onClick={(e) => handleViewColumnLineage(output.id, e)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <rect x="2" y="2" width="4" height="4" rx="1" />
+                              <rect x="10" y="2" width="4" height="4" rx="1" />
+                              <rect x="10" y="10" width="4" height="4" rx="1" />
+                              <line x1="6" y1="4" x2="10" y2="4" />
+                              <line x1="12" y1="6" x2="12" y2="10" />
+                            </svg>
+                            View Column Lineage
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <Handle
                       type="source"
                       position={Position.Right}

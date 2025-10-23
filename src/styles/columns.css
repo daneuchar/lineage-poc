@@ -1,0 +1,115 @@
+/**
+ * Column Item Styles
+ * Styles for individual column items within port nodes
+ */
+
+.column-item {
+  position: relative;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.column-item:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+}
+
+.column-item.selected {
+  background: var(--port-selected-bg) !important;
+  border-color: var(--port-selected-border) !important;
+}
+
+.column-item.in-lineage {
+  background: var(--lineage-port-bg);
+  border-color: var(--lineage-port-border);
+}
+
+.column-item.in-lineage:hover {
+  background: var(--lineage-port-hover-bg);
+  border-color: var(--lineage-port-hover-border);
+}
+
+.column-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.column-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.column-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.column-badges {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.column-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pk-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.nullable-badge {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #818cf8;
+}
+
+.column-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.column-type {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--gray-500);
+  font-family: 'Courier New', monospace;
+}
+
+.info-icon {
+  color: var(--gray-400);
+  cursor: help;
+  transition: color 0.2s ease;
+}
+
+.info-icon:hover {
+  color: var(--gray-600);
+}
+
+/* Column Item States */
+.column-item.selected .column-name {
+  color: var(--port-selected-text);
+}
+
+.column-item.in-lineage .column-name {
+  color: var(--lineage-port-text);
+}
