@@ -3,16 +3,48 @@
  * Functions to calculate upstream and downstream column lineage
  */
 
+import type { ColumnRelationship, ColumnPort, Column } from '../types';
+
+interface PortInfo {
+  portId: string;
+  portLabel: string;
+  nodeId: string;
+  nodeLabel: string;
+}
+
+interface ColumnLineageMaps {
+  columnToEdges: Map<string, (ColumnRelationship & { id: string })[]>;
+  columnToPort: Map<string, PortInfo>;
+  portData: Map<string, ColumnPort>;
+}
+
+interface ColumnLineageResult {
+  columns: Set<string>;
+  edges: Set<string>;
+  ports: Set<string>;
+}
+
+interface CompleteColumnLineageResult extends ColumnLineageResult {
+  upstream: ColumnLineageResult;
+  downstream: ColumnLineageResult;
+}
+
+interface AllPorts {
+  selectedPort: ColumnPort;
+  upstreamPorts?: ColumnPort[];
+  downstreamPorts?: ColumnPort[];
+}
+
 /**
  * Build adjacency maps for efficient column lineage traversal
- * @param {Array} columnRelationships - Array of column-to-column relationships
- * @param {Object} allPorts - Object containing selectedPort, upstreamPorts, downstreamPorts
- * @returns {Object} - { columnToEdges, columnToPort, portData }
  */
-export function buildColumnLineageMaps(columnRelationships, allPorts) {
-  const columnToEdges = new Map(); // column -> edges connected to this column
-  const columnToPort = new Map(); // column -> parent port info
-  const portData = new Map(); // portId -> port data
+export function buildColumnLineageMaps(
+  columnRelationships: ColumnRelationship[],
+  allPorts: AllPorts
+): ColumnLineageMaps {
+  const columnToEdges = new Map<string, (ColumnRelationship & { id: string })[]>();
+  const columnToPort = new Map<string, PortInfo>();
+  const portData = new Map<string, ColumnPort>();
 
   // Process all ports (selected, upstream, downstream)
   const allPortsList = [
@@ -52,8 +84,8 @@ export function buildColumnLineageMaps(columnRelationships, allPorts) {
     }
 
     const edgeData = { id: edgeId, ...rel };
-    columnToEdges.get(sourceCol).push(edgeData);
-    columnToEdges.get(targetCol).push(edgeData);
+    columnToEdges.get(sourceCol)!.push(edgeData);
+    columnToEdges.get(targetCol)!.push(edgeData);
   });
 
   return { columnToEdges, columnToPort, portData };
@@ -61,18 +93,15 @@ export function buildColumnLineageMaps(columnRelationships, allPorts) {
 
 /**
  * Find upstream column lineage (backward traversal) from a given column
- * @param {String} columnId - Starting column ID
- * @param {Object} maps - { columnToEdges, columnToPort, portData }
- * @returns {Object} - { columns: Set, edges: Set, ports: Set }
  */
-export function findUpstreamColumnLineage(columnId, maps) {
+export function findUpstreamColumnLineage(columnId: string, maps: ColumnLineageMaps): ColumnLineageResult {
   const { columnToEdges, columnToPort } = maps;
-  const visited = new Set();
-  const lineageColumns = new Set();
-  const lineageEdges = new Set();
-  const lineagePorts = new Set();
+  const visited = new Set<string>();
+  const lineageColumns = new Set<string>();
+  const lineageEdges = new Set<string>();
+  const lineagePorts = new Set<string>();
 
-  function traverseUpstream(currentColumnId) {
+  function traverseUpstream(currentColumnId: string): void {
     if (visited.has(currentColumnId)) return;
     visited.add(currentColumnId);
     lineageColumns.add(currentColumnId);
@@ -99,18 +128,15 @@ export function findUpstreamColumnLineage(columnId, maps) {
 
 /**
  * Find downstream column lineage (forward traversal) from a given column
- * @param {String} columnId - Starting column ID
- * @param {Object} maps - { columnToEdges, columnToPort, portData }
- * @returns {Object} - { columns: Set, edges: Set, ports: Set }
  */
-export function findDownstreamColumnLineage(columnId, maps) {
+export function findDownstreamColumnLineage(columnId: string, maps: ColumnLineageMaps): ColumnLineageResult {
   const { columnToEdges, columnToPort } = maps;
-  const visited = new Set();
-  const lineageColumns = new Set();
-  const lineageEdges = new Set();
-  const lineagePorts = new Set();
+  const visited = new Set<string>();
+  const lineageColumns = new Set<string>();
+  const lineageEdges = new Set<string>();
+  const lineagePorts = new Set<string>();
 
-  function traverseDownstream(currentColumnId) {
+  function traverseDownstream(currentColumnId: string): void {
     if (visited.has(currentColumnId)) return;
     visited.add(currentColumnId);
     lineageColumns.add(currentColumnId);
@@ -137,12 +163,12 @@ export function findDownstreamColumnLineage(columnId, maps) {
 
 /**
  * Find complete column lineage (both upstream and downstream) from a given column
- * @param {String} columnId - Starting column ID
- * @param {Array} columnRelationships - Array of column-to-column relationships
- * @param {Object} allPorts - Object containing selectedPort, upstreamPorts, downstreamPorts
- * @returns {Object} - { columns: Set, edges: Set, ports: Set, upstream: Object, downstream: Object }
  */
-export function findCompleteColumnLineage(columnId, columnRelationships, allPorts) {
+export function findCompleteColumnLineage(
+  columnId: string | null,
+  columnRelationships: ColumnRelationship[],
+  allPorts: AllPorts
+): CompleteColumnLineageResult {
   if (!columnId) {
     return {
       columns: new Set(),
@@ -173,11 +199,8 @@ export function findCompleteColumnLineage(columnId, columnRelationships, allPort
 
 /**
  * Get column by ID from all ports data
- * @param {String} columnId - Column ID to find
- * @param {Object} allPorts - Object containing selectedPort, upstreamPorts, downstreamPorts
- * @returns {Object|null} - Column object or null if not found
  */
-export function getColumnById(columnId, allPorts) {
+export function getColumnById(columnId: string, allPorts: AllPorts): (Column & { portId: string; portLabel: string }) | null {
   const allPortsList = [
     allPorts.selectedPort,
     ...(allPorts.upstreamPorts || []),
@@ -197,11 +220,8 @@ export function getColumnById(columnId, allPorts) {
 
 /**
  * Get port by ID from all ports data
- * @param {String} portId - Port ID to find
- * @param {Object} allPorts - Object containing selectedPort, upstreamPorts, downstreamPorts
- * @returns {Object|null} - Port object or null if not found
  */
-export function getPortById(portId, allPorts) {
+export function getPortById(portId: string, allPorts: AllPorts): ColumnPort | null {
   if (allPorts.selectedPort?.portId === portId) {
     return allPorts.selectedPort;
   }

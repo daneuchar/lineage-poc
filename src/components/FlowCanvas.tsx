@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef, useMemo } from "react";
+import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -6,48 +6,74 @@ import {
   Background,
   useNodesState,
   useEdgesState,
-  addEdge,
   useReactFlow,
   ControlButton,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+  type Node as ReactFlowNode,
+  type Edge as ReactFlowEdge,
+  type OnNodesChange,
+  type OnEdgesChange,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
-import DataProductNode from "./DataProductNode";
+import DataProductNode from './DataProductNode';
 
-import { mockApi } from "../services/mockApi";
-import { getLayoutedNodes } from "../utils/layoutUtils";
-import { findCompleteLineage, findNodeLineage } from "../utils/lineageUtils";
-
+import { mockApi } from '../services/mockApi';
+import { getLayoutedNodes } from '../utils/layoutUtils';
+import { findCompleteLineage, findNodeLineage } from '../utils/lineageUtils';
+import type {
+  DataProductNodeData,
+  Relationship,
+  ExpandedNodesState,
+  VisiblePortsState,
+  CompleteLineageResult,
+} from '../types';
 
 const nodeTypes = {
   dataproduct: DataProductNode,
 };
 
-function FlowCanvas({ onViewColumnLineage }) {
-  const { fitView, getNode } = useReactFlow();
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [relationships, setRelationships] = useState([]); // Store relationships from API
-  const [selectedNode, setSelectedNode] = useState(null); // Track selected port for edge highlighting
-  const [expandedNodes, setExpandedNodes] = useState({});
-  const [visiblePorts, setVisiblePorts] = useState({}); // Track visible ports per node
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showBackground, setShowBackground] = useState(false); // Track background visibility
-  const [lineage, setLineage] = useState({ nodes: new Set(), edges: new Set(), ports: new Set() }); // Track lineage
+interface FlowCanvasProps {
+  onViewColumnLineage?: (portId: string) => void;
+}
 
-  // Calculate layout using ELK
-  const calculateLayout = useCallback(async (nodes, edges, expandedNodes) => {
-    return await getLayoutedNodes(nodes, edges, expandedNodes, {});
-  }, []);
+function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
+  const { fitView, getNode } = useReactFlow();
+  const [nodes, setNodes, onNodesChange] = useNodesState<DataProductNodeData>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [relationships, setRelationships] = useState<Relationship[]>([]); // Store relationships from API
+  const [selectedNode, setSelectedNode] = useState<string | null>(null); // Track selected port for edge highlighting
+  const [expandedNodes, setExpandedNodes] = useState<ExpandedNodesState>({});
+  const [visiblePorts, setVisiblePorts] = useState<VisiblePortsState>({}); // Track visible ports per node
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showBackground, setShowBackground] = useState(false); // Track background visibility
+  const [lineage, setLineage] = useState<CompleteLineageResult>({
+    nodes: new Set(),
+    edges: new Set(),
+    ports: new Set(),
+    upstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+    downstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+  }); // Track lineage
+
+  // Calculate layout using Dagre
+  const calculateLayout = useCallback(
+    async (
+      nodes: ReactFlowNode<DataProductNodeData>[],
+      edges: ReactFlowEdge[],
+      expandedNodes: ExpandedNodesState
+    ) => {
+      return await getLayoutedNodes(nodes, edges, expandedNodes, {});
+    },
+    []
+  );
 
   // Build edges dynamically from relationships
   const buildEdgesFromRelationships = useCallback(() => {
-    const builtEdges = [];
+    const builtEdges: ReactFlowEdge[] = [];
 
     relationships.forEach((rel) => {
       // Direct node-to-node edges (shown when at least one node is collapsed)
-      if (rel.type === "direct") {
+      if (rel.type === 'direct') {
         const sourceCollapsed = !expandedNodes[rel.sourceNode];
         const targetCollapsed = !expandedNodes[rel.targetNode];
 
@@ -58,14 +84,14 @@ function FlowCanvas({ onViewColumnLineage }) {
             id: `edge-${rel.id}`,
             source: rel.sourceNode,
             target: rel.targetNode,
-            type: "default",
+            type: 'default',
             style: rel.style,
           });
         }
       }
 
       // Port-to-port edges (shown when both nodes are expanded)
-      if (rel.type === "port") {
+      if (rel.type === 'port') {
         // Only show if both nodes are expanded
         const bothExpanded = expandedNodes[rel.sourceNode] && expandedNodes[rel.targetNode];
         if (!bothExpanded) return;
@@ -85,7 +111,7 @@ function FlowCanvas({ onViewColumnLineage }) {
             sourceHandle: rel.sourcePort,
             target: rel.targetNode,
             targetHandle: rel.targetPort,
-            type: "default",
+            type: 'default',
             style: rel.style,
           });
         }
@@ -117,21 +143,21 @@ function FlowCanvas({ onViewColumnLineage }) {
         // Store relationships for dynamic edge building
         setRelationships(data.relationships || []);
 
-        // Add default positions for initial load (ELK will override these)
+        // Add default positions for initial load (layout will override these)
         const nodesWithDefaultPositions = data.nodes.map((node) => ({
           ...node,
           position: { x: 0, y: 0 },
         }));
 
         // Build initial edges (will be empty for collapsed nodes)
-        const initialEdges = [];
+        const initialEdges: ReactFlowEdge[] = [];
         data.relationships?.forEach((rel) => {
-          if (rel.type === "direct") {
+          if (rel.type === 'direct') {
             initialEdges.push({
               id: `edge-${rel.id}`,
               source: rel.sourceNode,
               target: rel.targetNode,
-              type: "default",
+              type: 'default',
               style: rel.style,
             });
           }
@@ -139,19 +165,16 @@ function FlowCanvas({ onViewColumnLineage }) {
 
         // Calculate layout assuming all nodes will be expanded for proper spacing
         // This prevents overlapping when nodes expand for the first time
-        const assumeAllExpanded = {};
-        nodesWithDefaultPositions.forEach(node => {
+        const assumeAllExpanded: ExpandedNodesState = {};
+        nodesWithDefaultPositions.forEach((node) => {
           assumeAllExpanded[node.id] = true;
         });
 
-        const layoutNodes = await calculateLayout(
-          nodesWithDefaultPositions,
-          initialEdges,
-          assumeAllExpanded
-        );
+        const layoutNodes = await calculateLayout(nodesWithDefaultPositions, initialEdges, assumeAllExpanded);
         setNodes(layoutNodes);
       } catch (err) {
-        setError(err.message);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -160,10 +183,8 @@ function FlowCanvas({ onViewColumnLineage }) {
     loadFlowData();
   }, [setNodes, calculateLayout]);
 
- 
-
   // Suppress handle-related errors during pagination transitions
-  const onError = useCallback((code, message) => {
+  const onError = useCallback((code: string, message: string) => {
     // Suppress error #008 (handle not found) during pagination
     // This can happen temporarily while React Flow processes handle updates
     if (code === '008') {
@@ -175,7 +196,7 @@ function FlowCanvas({ onViewColumnLineage }) {
   }, []);
 
   const handleToggleExpansion = useCallback(
-    (nodeId) => {
+    (nodeId: string) => {
       // Determine if we're expanding or collapsing
       setExpandedNodes((prev) => {
         const isExpanding = !prev[nodeId];
@@ -184,7 +205,7 @@ function FlowCanvas({ onViewColumnLineage }) {
         // If expanding, also expand all directly connected nodes (radius 1)
         if (isExpanding) {
           // Find all edges connected to this node
-          const connectedNodeIds = new Set();
+          const connectedNodeIds = new Set<string>();
 
           edges.forEach((edge) => {
             // Check if this is a direct dataproduct edge (no handles)
@@ -202,16 +223,17 @@ function FlowCanvas({ onViewColumnLineage }) {
             newState[connectedId] = true;
           });
 
-          console.log(`Expanding ${nodeId} and ${connectedNodeIds.size} connected nodes:`, Array.from(connectedNodeIds));
+          console.log(
+            `Expanding ${nodeId} and ${connectedNodeIds.size} connected nodes:`,
+            Array.from(connectedNodeIds)
+          );
 
           // Center on all expanded nodes after expansion with a slight delay
           setTimeout(() => {
             const expandedNodeIds = [nodeId, ...Array.from(connectedNodeIds)];
 
             // Get the actual node objects
-            const nodesToFit = expandedNodeIds
-              .map(id => getNode(id))
-              .filter(Boolean);
+            const nodesToFit = expandedNodeIds.map((id) => getNode(id)).filter(Boolean);
 
             if (nodesToFit.length > 0) {
               fitView({
@@ -232,43 +254,66 @@ function FlowCanvas({ onViewColumnLineage }) {
     [fitView, getNode, edges]
   );
 
-  const handlePortSelect = useCallback((portId) => {
-    // Toggle selection: if clicking the same port, deselect it
-    setSelectedNode((prev) => {
-      const newSelection = prev === portId ? null : portId;
+  const handlePortSelect = useCallback(
+    (portId: string | null) => {
+      // Toggle selection: if clicking the same port, deselect it
+      setSelectedNode((prev) => {
+        const newSelection = prev === portId ? null : portId;
 
-      // Calculate lineage for the selected port
-      if (newSelection) {
-        const lineageData = findCompleteLineage(newSelection, relationships, nodes);
-        setLineage(lineageData);
-      } else {
-        // Clear lineage when deselecting
-        setLineage({ nodes: new Set(), edges: new Set(), ports: new Set() });
-      }
+        // Calculate lineage for the selected port
+        if (newSelection) {
+          const lineageData = findCompleteLineage(newSelection, relationships, nodes);
+          setLineage(lineageData);
+        } else {
+          // Clear lineage when deselecting
+          setLineage({
+            nodes: new Set(),
+            edges: new Set(),
+            ports: new Set(),
+            upstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+            downstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+          });
+        }
 
-      return newSelection;
-    });
-  }, [relationships, nodes]);
+        return newSelection;
+      });
+    },
+    [relationships, nodes]
+  );
 
-  const handleNodeClick = useCallback((nodeId) => {
-    // Toggle selection: if clicking the same node, deselect it
-    setSelectedNode((prev) => {
-      const newSelection = prev === nodeId ? null : nodeId;
+  const handleNodeClick = useCallback(
+    (nodeId: string) => {
+      // Toggle selection: if clicking the same node, deselect it
+      setSelectedNode((prev) => {
+        const newSelection = prev === nodeId ? null : nodeId;
 
-      // Calculate lineage for the selected node (when collapsed)
-      if (newSelection) {
-        const lineageData = findNodeLineage(newSelection, relationships, nodes);
-        setLineage({ ...lineageData, ports: new Set() });
-      } else {
-        // Clear lineage when deselecting
-        setLineage({ nodes: new Set(), edges: new Set(), ports: new Set() });
-      }
+        // Calculate lineage for the selected node (when collapsed)
+        if (newSelection) {
+          const lineageData = findNodeLineage(newSelection, relationships, nodes);
+          setLineage({
+            ...lineageData,
+            ports: new Set(),
+            upstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+            downstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+          });
+        } else {
+          // Clear lineage when deselecting
+          setLineage({
+            nodes: new Set(),
+            edges: new Set(),
+            ports: new Set(),
+            upstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+            downstream: { nodes: new Set(), edges: new Set(), ports: new Set() },
+          });
+        }
 
-      return newSelection;
-    });
-  }, [relationships, nodes]);
+        return newSelection;
+      });
+    },
+    [relationships, nodes]
+  );
 
-  const handleVisiblePortsChange = useCallback((nodeId, visibleInputs, visibleOutputs) => {
+  const handleVisiblePortsChange = useCallback((nodeId: string, visibleInputs: string[], visibleOutputs: string[]) => {
     setVisiblePorts((prev) => ({
       ...prev,
       [nodeId]: {
@@ -284,7 +329,7 @@ function FlowCanvas({ onViewColumnLineage }) {
 
   // Add callbacks to dataproduct nodes
   const nodesWithCallback = nodes.map((node) => {
-    if (node.type === "dataproduct") {
+    if (node.type === 'dataproduct') {
       const expanded = expandedNodes[node.id];
       const inLineage = lineage.nodes.has(node.id);
       return {
@@ -294,7 +339,7 @@ function FlowCanvas({ onViewColumnLineage }) {
           onToggleExpansion: () => handleToggleExpansion(node.id),
           onNodeClick: () => handleNodeClick(node.id),
           onPortSelect: handlePortSelect,
-          onVisiblePortsChange: (visibleInputs, visibleOutputs) =>
+          onVisiblePortsChange: (visibleInputs: string[], visibleOutputs: string[]) =>
             handleVisiblePortsChange(node.id, visibleInputs, visibleOutputs),
           onViewColumnLineage: onViewColumnLineage,
           selected: selectedNode === node.id,
@@ -318,19 +363,15 @@ function FlowCanvas({ onViewColumnLineage }) {
     const targetInLineage = lineage.nodes.has(edge.target);
     const connectedToLineageNode = sourceInLineage || targetInLineage;
 
-    // Determine if this is an upstream or downstream edge
-    // For coloring purposes, we'll use blue for all lineage edges for now
-    // You can enhance this later to differentiate upstream vs downstream
-
     return {
       ...edge,
       style: {
         ...edge.style,
         stroke: isInLineage
-          ? "#3b82f6" // Direct lineage color (blue)
+          ? '#3b82f6' // Direct lineage color (blue)
           : connectedToLineageNode && hasLineage
-          ? "#6b7280" // Connected to lineage node (gray)
-          : edge.style?.stroke || "#9ca3af", // Default or original color
+          ? '#6b7280' // Connected to lineage node (gray)
+          : edge.style?.stroke || '#9ca3af', // Default or original color
         strokeWidth: isInLineage ? 3 : connectedToLineageNode && hasLineage ? 2 : edge.style?.strokeWidth || 1,
         opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
       },
@@ -379,12 +420,13 @@ function FlowCanvas({ onViewColumnLineage }) {
           type: 'default',
           animated: false,
           style: { strokeWidth: 1 },
-          pathOptions: { borderRadius: 20 },
         }}
       >
-        
-        <Controls >
-          <ControlButton onClick={() => setShowBackground(!showBackground)} title={showBackground ? "Hide Grid" : "Show Grid"}>
+        <Controls>
+          <ControlButton
+            onClick={() => setShowBackground(!showBackground)}
+            title={showBackground ? 'Hide Grid' : 'Show Grid'}
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               {showBackground ? (
                 <rect x="2" y="2" width="12" height="12" stroke="currentColor" strokeWidth="1.5" fill="none" />
@@ -398,8 +440,7 @@ function FlowCanvas({ onViewColumnLineage }) {
               )}
             </svg>
           </ControlButton>
-          
-          </Controls>
+        </Controls>
         <MiniMap />
         {showBackground && <Background variant="dots" gap={12} size={1} />}
       </ReactFlow>

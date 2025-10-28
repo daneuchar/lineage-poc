@@ -1,14 +1,16 @@
 import dagre from 'dagre';
+import type { Node as ReactFlowNode, Edge as ReactFlowEdge } from '@xyflow/react';
+import type { DataProductNodeData, ExpandedNodesState, ColumnPortNodeData } from '../types';
 
 /**
  * Calculate automatic layout using Dagre for hierarchical flow
- * @param {Array} nodes - React Flow nodes
- * @param {Array} edges - React Flow edges
- * @param {Object} expandedNodes - State of expanded nodes
- * @param {Object} showAllStates - State of "show all" for each node (unused, kept for compatibility)
- * @returns {Promise<Array>} - Nodes with calculated positions
  */
-export const getLayoutedNodes = async (nodes, edges, expandedNodes = {}, showAllStates = {}) => {
+export const getLayoutedNodes = async (
+  nodes: ReactFlowNode<DataProductNodeData | ColumnPortNodeData>[],
+  edges: ReactFlowEdge[],
+  expandedNodes: ExpandedNodesState = {},
+  _showAllStates: Record<string, boolean> = {}
+): Promise<ReactFlowNode<DataProductNodeData | ColumnPortNodeData>[]> => {
   // For debugging
   console.log('Layout: Expanded nodes:', expandedNodes);
 
@@ -18,9 +20,9 @@ export const getLayoutedNodes = async (nodes, edges, expandedNodes = {}, showAll
   // Configure the graph layout
   dagreGraph.setGraph({
     rankdir: 'LR', // Left to Right
-    nodesep: 80,   // Vertical spacing between nodes
-    ranksep: 150,  // Horizontal spacing between layers
-    edgesep: 50,   // Edge spacing
+    nodesep: 80, // Vertical spacing between nodes
+    ranksep: 150, // Horizontal spacing between layers
+    edgesep: 50, // Edge spacing
     marginx: 50,
     marginy: 50,
   });
@@ -68,7 +70,10 @@ export const getLayoutedNodes = async (nodes, edges, expandedNodes = {}, showAll
 /**
  * Get dynamic width for different node types
  */
-const getNodeWidth = (node, expandedNodes) => {
+const getNodeWidth = (
+  node: ReactFlowNode<DataProductNodeData | ColumnPortNodeData>,
+  expandedNodes: ExpandedNodesState
+): number => {
   if (node.type === 'dataproduct') {
     const isExpanded = expandedNodes[node.id];
     return isExpanded ? 420 : 120;
@@ -82,14 +87,18 @@ const getNodeWidth = (node, expandedNodes) => {
 /**
  * Get dynamic height for different node types based on content
  */
-const getNodeHeight = (node, expandedNodes) => {
+const getNodeHeight = (
+  node: ReactFlowNode<DataProductNodeData | ColumnPortNodeData>,
+  expandedNodes: ExpandedNodesState
+): number => {
   if (node.type === 'dataproduct') {
+    const data = node.data as DataProductNodeData;
     const isExpanded = expandedNodes[node.id];
     if (!isExpanded) return 80;
 
     // Calculate height based on number of ports with pagination
-    const inputCount = node.data?.inputs?.length || 0;
-    const outputCount = node.data?.outputs?.length || 0;
+    const inputCount = data.inputs?.length || 0;
+    const outputCount = data.outputs?.length || 0;
     const ITEMS_PER_PAGE = 5;
 
     // Show max 5 items per page
@@ -104,11 +113,12 @@ const getNodeHeight = (node, expandedNodes) => {
 
     // header (50) + port header (30) + items (28 each) + pagination (36 if needed) + padding (20)
     const paginationHeight = needsPagination ? 36 : 0;
-    return 100 + (maxVisiblePorts * 28) + paginationHeight;
+    return 100 + maxVisiblePorts * 28 + paginationHeight;
   }
   if (node.type === 'columnport') {
+    const data = node.data as ColumnPortNodeData;
     // Calculate height based on number of columns with pagination
-    const columnCount = node.data?.columns?.length || 0;
+    const columnCount = data.port?.columns?.length || 0;
     const ITEMS_PER_PAGE = 5;
 
     // Show max 5 items per page
@@ -117,7 +127,7 @@ const getNodeHeight = (node, expandedNodes) => {
 
     // header (60) + section padding (20) + column items (49px each) + pagination (32 if needed)
     const paginationHeight = needsPagination ? 32 : 0;
-    return 80 + (visibleColumns * 49) + paginationHeight;
+    return 80 + visibleColumns * 49 + paginationHeight;
   }
   return 100; // Default height
 };

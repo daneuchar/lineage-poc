@@ -3,17 +3,26 @@
  * Functions to calculate upstream and downstream lineage for data product ports
  */
 
+import type {
+  Relationship,
+  LineageMaps,
+  LineageResult,
+  CompleteLineageResult,
+  DataProductNodeData,
+} from '../types';
+import type { Node as ReactFlowNode } from '@xyflow/react';
+
 /**
  * Build adjacency maps for efficient lineage traversal
- * @param {Array} relationships - Array of relationship objects from API
- * @param {Array} nodes - Array of node objects
- * @returns {Object} - { portToEdges, nodeToEdges, portToNode, nodeData }
  */
-export function buildLineageMaps(relationships, nodes) {
-  const portToEdges = new Map(); // port -> edges connected to this port
-  const nodeToEdges = new Map(); // node -> edges connected to this node
-  const portToNode = new Map(); // port -> parent node
-  const nodeData = new Map(); // nodeId -> node data (for internal port relationships)
+export function buildLineageMaps(
+  relationships: Relationship[],
+  nodes: ReactFlowNode<DataProductNodeData>[]
+): LineageMaps {
+  const portToEdges = new Map<string, Relationship[]>();
+  const nodeToEdges = new Map<string, Relationship[]>();
+  const portToNode = new Map<string, { nodeId: string; type: 'input' | 'output' }>();
+  const nodeData = new Map<string, DataProductNodeData>();
 
   // Build node data map
   nodes.forEach((node) => {
@@ -46,8 +55,8 @@ export function buildLineageMaps(relationships, nodes) {
       if (!portToEdges.has(targetPort)) {
         portToEdges.set(targetPort, []);
       }
-      portToEdges.get(sourcePort).push(rel);
-      portToEdges.get(targetPort).push(rel);
+      portToEdges.get(sourcePort)!.push(rel);
+      portToEdges.get(targetPort)!.push(rel);
     }
 
     if (rel.type === 'direct') {
@@ -61,8 +70,8 @@ export function buildLineageMaps(relationships, nodes) {
       if (!nodeToEdges.has(targetNode)) {
         nodeToEdges.set(targetNode, []);
       }
-      nodeToEdges.get(sourceNode).push(rel);
-      nodeToEdges.get(targetNode).push(rel);
+      nodeToEdges.get(sourceNode)!.push(rel);
+      nodeToEdges.get(targetNode)!.push(rel);
     }
   });
 
@@ -71,27 +80,24 @@ export function buildLineageMaps(relationships, nodes) {
 
 /**
  * Find all related ports within the same node (internal node transformations)
- * @param {String} portId - The port ID to start from
- * @param {String} nodeId - The node ID containing the port
- * @param {Map} nodeData - Map of node data
- * @returns {Set} - Set of related port IDs within the same node
  */
-function findInternalRelatedPorts(portId, nodeId, nodeData) {
-  const relatedPorts = new Set();
+function findInternalRelatedPorts(
+  portId: string,
+  nodeId: string,
+  nodeData: Map<string, DataProductNodeData>
+): Set<string> {
+  const relatedPorts = new Set<string>();
   const data = nodeData.get(nodeId);
 
   if (!data) return relatedPorts;
 
   // Find the port in inputs or outputs
-  let sourcePort = null;
-  if (data.inputs) {
-    sourcePort = data.inputs.find((p) => p.id === portId);
-  }
-  if (!sourcePort && data.outputs) {
-    sourcePort = data.outputs.find((p) => p.id === portId);
+  let sourcePort = data.inputs?.find((p) => p.id === portId);
+  if (!sourcePort) {
+    sourcePort = data.outputs?.find((p) => p.id === portId);
   }
 
-  if (sourcePort && sourcePort.relatedPorts) {
+  if (sourcePort?.relatedPorts) {
     sourcePort.relatedPorts.forEach((relatedPortId) => {
       relatedPorts.add(relatedPortId);
     });
@@ -103,18 +109,15 @@ function findInternalRelatedPorts(portId, nodeId, nodeData) {
 /**
  * Find upstream lineage (backward traversal) from a given port
  * Traces all data sources that feed into this port
- * @param {String} portId - Starting port ID
- * @param {Object} maps - { portToEdges, nodeToEdges, portToNode, nodeData }
- * @returns {Object} - { nodes: Set, edges: Set, ports: Set }
  */
-export function findUpstreamLineage(portId, maps) {
-  const { portToEdges, nodeToEdges, portToNode, nodeData } = maps;
-  const visited = new Set();
-  const lineageNodes = new Set();
-  const lineageEdges = new Set();
-  const lineagePorts = new Set();
+export function findUpstreamLineage(portId: string, maps: LineageMaps): LineageResult {
+  const { portToEdges, portToNode, nodeData } = maps;
+  const visited = new Set<string>();
+  const lineageNodes = new Set<string>();
+  const lineageEdges = new Set<string>();
+  const lineagePorts = new Set<string>();
 
-  function traverseUpstream(currentPortId) {
+  function traverseUpstream(currentPortId: string): void {
     if (visited.has(currentPortId)) return;
     visited.add(currentPortId);
     lineagePorts.add(currentPortId);
@@ -155,18 +158,15 @@ export function findUpstreamLineage(portId, maps) {
 /**
  * Find downstream lineage (forward traversal) from a given port
  * Traces all consumers that use data from this port
- * @param {String} portId - Starting port ID
- * @param {Object} maps - { portToEdges, nodeToEdges, portToNode, nodeData }
- * @returns {Object} - { nodes: Set, edges: Set, ports: Set }
  */
-export function findDownstreamLineage(portId, maps) {
-  const { portToEdges, nodeToEdges, portToNode, nodeData } = maps;
-  const visited = new Set();
-  const lineageNodes = new Set();
-  const lineageEdges = new Set();
-  const lineagePorts = new Set();
+export function findDownstreamLineage(portId: string, maps: LineageMaps): LineageResult {
+  const { portToEdges, portToNode, nodeData } = maps;
+  const visited = new Set<string>();
+  const lineageNodes = new Set<string>();
+  const lineageEdges = new Set<string>();
+  const lineagePorts = new Set<string>();
 
-  function traverseDownstream(currentPortId) {
+  function traverseDownstream(currentPortId: string): void {
     if (visited.has(currentPortId)) return;
     visited.add(currentPortId);
     lineagePorts.add(currentPortId);
@@ -206,12 +206,12 @@ export function findDownstreamLineage(portId, maps) {
 
 /**
  * Find complete lineage (both upstream and downstream) from a given port
- * @param {String} portId - Starting port ID
- * @param {Array} relationships - Array of relationship objects
- * @param {Array} nodes - Array of node objects
- * @returns {Object} - { nodes: Set, edges: Set, ports: Set, upstream: Object, downstream: Object }
  */
-export function findCompleteLineage(portId, relationships, nodes) {
+export function findCompleteLineage(
+  portId: string | null,
+  relationships: Relationship[],
+  nodes: ReactFlowNode<DataProductNodeData>[]
+): CompleteLineageResult {
   if (!portId) {
     return {
       nodes: new Set(),
@@ -243,21 +243,21 @@ export function findCompleteLineage(portId, relationships, nodes) {
 /**
  * Find lineage for a node (when collapsed)
  * Finds all nodes and edges in the lineage path
- * @param {String} nodeId - Starting node ID
- * @param {Array} relationships - Array of relationship objects
- * @param {Array} nodes - Array of node objects
- * @returns {Object} - { nodes: Set, edges: Set }
  */
-export function findNodeLineage(nodeId, relationships, nodes) {
+export function findNodeLineage(
+  nodeId: string | null,
+  relationships: Relationship[],
+  _nodes: ReactFlowNode<DataProductNodeData>[]
+): Omit<LineageResult, 'ports'> {
   if (!nodeId) {
     return { nodes: new Set(), edges: new Set() };
   }
 
   const lineageNodes = new Set([nodeId]);
-  const lineageEdges = new Set();
-  const visited = new Set();
+  const lineageEdges = new Set<string>();
+  const visited = new Set<string>();
 
-  function traverse(currentNodeId) {
+  function traverse(currentNodeId: string): void {
     if (visited.has(currentNodeId)) return;
     visited.add(currentNodeId);
 
