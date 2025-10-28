@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -7,28 +7,51 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+  type Node as ReactFlowNode,
+  type Edge as ReactFlowEdge,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
-import ColumnPortNode from "./ColumnPortNode";
-import { mockApi } from "../services/mockApi";
-import { findCompleteColumnLineage } from "../utils/columnLineageUtils";
-import { getLayoutedNodes } from "../utils/layoutUtils";
+import ColumnPortNode from './ColumnPortNode';
+import { mockApi } from '../services/mockApi';
+import { findCompleteColumnLineage } from '../utils/columnLineageUtils';
+import { getLayoutedNodes } from '../utils/layoutUtils';
+import type {
+  ColumnPortNodeData,
+  ColumnLineageData,
+  ColumnPort,
+  ColumnRelationship,
+} from '../types';
 
 const nodeTypes = {
   columnport: ColumnPortNode,
 };
 
-function ColumnLineageCanvas({ initialPortId, onBack }) {
+interface ColumnLineageCanvasProps {
+  initialPortId: string;
+  onBack: () => void;
+}
+
+interface ColumnLineageResult {
+  columns: Set<string>;
+  edges: Set<string>;
+  ports: Set<string>;
+}
+
+function ColumnLineageCanvas({ initialPortId, onBack }: ColumnLineageCanvasProps) {
   const { fitView } = useReactFlow();
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<ColumnPortNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedColumn, setSelectedColumn] = useState(null);
-  const [lineage, setLineage] = useState({ columns: new Set(), edges: new Set(), ports: new Set() });
-  const [columnData, setColumnData] = useState(null); // Store all column data
-  const [visibleColumns, setVisibleColumns] = useState({}); // Track visible columns per node
+  const [error, setError] = useState<string | null>(null);
+  const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
+  const [lineage, setLineage] = useState<ColumnLineageResult>({
+    columns: new Set(),
+    edges: new Set(),
+    ports: new Set(),
+  });
+  const [columnData, setColumnData] = useState<ColumnLineageData | null>(null); // Store all column data
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, string[]>>({}); // Track visible columns per node
 
   // Load column lineage data from API
   useEffect(() => {
@@ -41,13 +64,13 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
         setColumnData(data);
 
         // Build nodes for 3-layer graph: Upstream → Selected → Downstream
-        const newNodes = [];
+        const newNodes: ReactFlowNode<ColumnPortNodeData>[] = [];
 
         // Upstream ports (left column)
         (data.upstreamPorts || []).forEach((port) => {
           newNodes.push({
             id: port.portId,
-            type: "columnport",
+            type: 'columnport',
             position: { x: 0, y: 0 }, // Will be calculated by Dagre
             data: {
               portId: port.portId,
@@ -55,7 +78,7 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
               nodeId: port.nodeId,
               nodeLabel: port.nodeLabel,
               columns: port.columns,
-              portType: "output",
+              portType: 'output',
             },
           });
         });
@@ -63,7 +86,7 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
         // Selected port (center)
         newNodes.push({
           id: data.selectedPort.portId,
-          type: "columnport",
+          type: 'columnport',
           position: { x: 0, y: 0 }, // Will be calculated by Dagre
           data: {
             portId: data.selectedPort.portId,
@@ -71,7 +94,7 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
             nodeId: data.selectedPort.nodeId,
             nodeLabel: data.selectedPort.nodeLabel,
             columns: data.selectedPort.columns,
-            portType: data.selectedPort.portId.includes('input') ? "input" : "output",
+            portType: data.selectedPort.portId.includes('input') ? 'input' : 'output',
             selected: true,
           },
         });
@@ -80,7 +103,7 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
         (data.downstreamPorts || []).forEach((port) => {
           newNodes.push({
             id: port.portId,
-            type: "columnport",
+            type: 'columnport',
             position: { x: 0, y: 0 }, // Will be calculated by Dagre
             data: {
               portId: port.portId,
@@ -88,14 +111,14 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
               nodeId: port.nodeId,
               nodeLabel: port.nodeLabel,
               columns: port.columns,
-              portType: "input",
+              portType: 'input',
             },
           });
         });
 
         // Build edges for layout calculation
         // Create simple edges from column relationships
-        const layoutEdges = [];
+        const layoutEdges: ReactFlowEdge[] = [];
         data.columnRelationships.forEach((rel, index) => {
           const sourcePortId = getPortIdForColumnInData(rel.sourceColumn, data);
           const targetPortId = getPortIdForColumnInData(rel.targetColumn, data);
@@ -112,9 +135,9 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
         // Apply Dagre layout
         const layoutedNodes = await getLayoutedNodes(newNodes, layoutEdges, {});
         setNodes(layoutedNodes);
-
       } catch (err) {
-        setError(err.message);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -135,17 +158,15 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
   }, [loading, nodes.length, fitView]);
 
   // Helper function to find port ID for a column ID during initial load
-  const getPortIdForColumnInData = (columnId, data) => {
-    if (!data) return null;
-
-    const allPorts = [
+  const getPortIdForColumnInData = (columnId: string, data: ColumnLineageData): string | null => {
+    const allPorts: ColumnPort[] = [
       data.selectedPort,
       ...(data.upstreamPorts || []),
       ...(data.downstreamPorts || []),
     ];
 
     for (const port of allPorts) {
-      if (port.columns.some(col => col.id === columnId)) {
+      if (port.columns.some((col) => col.id === columnId)) {
         return port.portId;
       }
     }
@@ -156,9 +177,9 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
   const buildEdgesFromRelationships = useCallback(() => {
     if (!columnData) return [];
 
-    const builtEdges = [];
+    const builtEdges: ReactFlowEdge[] = [];
 
-    columnData.columnRelationships.forEach((rel, index) => {
+    columnData.columnRelationships.forEach((rel: ColumnRelationship, index: number) => {
       // Find which nodes these columns belong to
       const sourceNodeId = getPortIdForColumn(rel.sourceColumn, columnData);
       const targetNodeId = getPortIdForColumn(rel.targetColumn, columnData);
@@ -181,8 +202,8 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
           sourceHandle: rel.sourceColumn,
           target: targetNodeId,
           targetHandle: rel.targetColumn,
-          type: "default",
-          style: { strokeWidth: 2, stroke: "#9ca3af" },
+          type: 'default',
+          style: { strokeWidth: 2, stroke: '#9ca3af' },
         });
       }
     });
@@ -191,17 +212,15 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
   }, [columnData, visibleColumns]);
 
   // Helper function to find port ID for a column ID
-  const getPortIdForColumn = (columnId, data) => {
-    if (!data) return null;
-
-    const allPorts = [
+  const getPortIdForColumn = (columnId: string, data: ColumnLineageData): string | null => {
+    const allPorts: ColumnPort[] = [
       data.selectedPort,
       ...(data.upstreamPorts || []),
       ...(data.downstreamPorts || []),
     ];
 
     for (const port of allPorts) {
-      if (port.columns.some(col => col.id === columnId)) {
+      if (port.columns.some((col) => col.id === columnId)) {
         return port.portId;
       }
     }
@@ -214,44 +233,60 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
     const timeoutId = setTimeout(() => {
       const newEdges = buildEdgesFromRelationships();
       setEdges(newEdges);
-    }, 1); 
+    }, 1);
 
     return () => clearTimeout(timeoutId);
   }, [buildEdgesFromRelationships, setEdges]);
 
   // Handle column selection
-  const handleColumnSelect = useCallback((columnId) => {
-    setSelectedColumn((prev) => {
-      const newSelection = prev === columnId ? null : columnId;
+  const handleColumnSelect = useCallback(
+    (columnId: string | null) => {
+      setSelectedColumn((prev) => {
+        const newSelection = prev === columnId ? null : columnId;
 
-      // Calculate lineage for the selected column
-      if (newSelection && columnData) {
-        const allPorts = {
-          selectedPort: columnData.selectedPort,
-          upstreamPorts: columnData.upstreamPorts,
-          downstreamPorts: columnData.downstreamPorts,
-        };
-        const lineageData = findCompleteColumnLineage(newSelection, columnData.columnRelationships, allPorts);
-        setLineage(lineageData);
-      } else {
-        // Clear lineage when deselecting
-        setLineage({ columns: new Set(), edges: new Set(), ports: new Set() });
-      }
+        // Calculate lineage for the selected column
+        if (newSelection && columnData) {
+          const allPorts = {
+            selectedPort: columnData.selectedPort,
+            upstreamPorts: columnData.upstreamPorts,
+            downstreamPorts: columnData.downstreamPorts,
+          };
+          const lineageData = findCompleteColumnLineage(newSelection, columnData.columnRelationships, allPorts);
+          setLineage(lineageData);
+        } else {
+          // Clear lineage when deselecting
+          setLineage({ columns: new Set(), edges: new Set(), ports: new Set() });
+        }
 
-      return newSelection;
-    });
-  }, [columnData]);
+        return newSelection;
+      });
+    },
+    [columnData]
+  );
 
   // Handle visible columns change (for pagination)
-  const handleVisibleColumnsChange = useCallback((nodeId, visibleColumnIds) => {
-    setVisibleColumns((prev) => ({
-      ...prev,
-      [nodeId]: visibleColumnIds,
-    }));
+  const handleVisibleColumnsChange = useCallback((nodeId: string, visibleColumnIds: string[]) => {
+    setVisibleColumns((prev) => {
+      // Only update if the visible columns have actually changed
+      const prevColumns = prev[nodeId];
+      const columnsChanged =
+        !prevColumns ||
+        visibleColumnIds.length !== prevColumns.length ||
+        visibleColumnIds.some((id, i) => id !== prevColumns[i]);
+
+      if (!columnsChanged) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [nodeId]: visibleColumnIds,
+      };
+    });
   }, []);
 
   // Suppress handle-related errors during pagination transitions
-  const onError = useCallback((code, message) => {
+  const onError = useCallback((code: string, message: string) => {
     // Suppress error #008 (handle not found) during pagination
     // This can happen temporarily while React Flow processes handle updates
     if (code === '008') {
@@ -263,13 +298,16 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
   }, []);
 
   // Handle switching to different port's column lineage
-  const handleViewColumnLineage = useCallback((portId) => {
-    if (portId !== initialPortId) {
-      // Reload with new port ID
-      window.location.hash = `#column-lineage/${portId}`;
-      window.location.reload(); // Simple reload for now
-    }
-  }, [initialPortId]);
+  const handleViewColumnLineage = useCallback(
+    (portId: string) => {
+      if (portId !== initialPortId) {
+        // Reload with new port ID
+        window.location.hash = `#column-lineage/${portId}`;
+        window.location.reload(); // Simple reload for now
+      }
+    },
+    [initialPortId]
+  );
 
   // Add callbacks to nodes
   const nodesWithCallback = nodes.map((node) => {
@@ -279,7 +317,8 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
       data: {
         ...node.data,
         onColumnSelect: handleColumnSelect,
-        onVisibleColumnsChange: (visibleColumnIds) => handleVisibleColumnsChange(node.id, visibleColumnIds),
+        onVisibleColumnsChange: (visibleColumnIds: string[]) =>
+          handleVisibleColumnsChange(node.id, visibleColumnIds),
         onViewColumnLineage: handleViewColumnLineage,
         selectedColumnId: selectedColumn,
         lineageColumns: lineage.columns,
@@ -298,18 +337,21 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
         ...edge,
         style: {
           ...edge.style,
-          stroke: isInLineage ? "#3b82f6" : "#9ca3af",
+          stroke: isInLineage ? '#3b82f6' : '#9ca3af',
           strokeWidth: isInLineage ? 3 : 2,
           opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
         },
         animated: false,
-        isInLineage, // Add flag for sorting
+        // Add a temporary property for sorting (React Flow will ignore unknown properties)
+        zIndex: isInLineage ? 1 : 0,
       };
     })
     .sort((a, b) => {
       // Sort so lineage edges render last (on top)
-      if (a.isInLineage && !b.isInLineage) return 1;
-      if (!a.isInLineage && b.isInLineage) return -1;
+      const aLineage = lineage.edges.has(a.id);
+      const bLineage = lineage.edges.has(b.id);
+      if (aLineage && !bLineage) return 1;
+      if (!aLineage && bLineage) return -1;
       return 0;
     });
 
@@ -319,7 +361,7 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
         <div className="column-lineage-header">
           <button className="back-button" onClick={onBack}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Back
           </button>
@@ -340,7 +382,7 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
         <div className="column-lineage-header">
           <button className="back-button" onClick={onBack}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Back
           </button>
@@ -360,7 +402,7 @@ function ColumnLineageCanvas({ initialPortId, onBack }) {
       <div className="column-lineage-header">
         <button className="back-button" onClick={onBack}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Back
         </button>

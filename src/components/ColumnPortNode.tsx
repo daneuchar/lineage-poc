@@ -1,40 +1,43 @@
 import { Avatar, Box, Tooltip } from '@mui/material';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, type MouseEvent } from 'react';
+import type { NodeProps } from '@xyflow/react';
+import type { ColumnPortNodeData, Column } from '../types';
 
-function ColumnPortNode({ id, data }) {
+function ColumnPortNode({ id, data }: NodeProps<Record<string, unknown>>) {
+  const nodeData = data as ColumnPortNodeData;
   const updateNodeInternals = useUpdateNodeInternals();
   const [columnPage, setColumnPage] = useState(0);
-  const [openMenuPortId, setOpenMenuPortId] = useState(null);
+  const [openMenuPortId, setOpenMenuPortId] = useState<string | null>(null);
 
   const ITEMS_PER_PAGE = 5;
 
   // Use globally selected column from parent
-  const selectedColumnId = data.selectedColumnId;
+  const selectedColumnId = nodeData.selectedColumnId;
 
-  const handleColumnClick = (column, e) => {
+  const handleColumnClick = (column: Column, e: MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     const newSelected = selectedColumnId === column.id ? null : column.id;
 
-    if (data.onColumnSelect) {
-      data.onColumnSelect(newSelected);
+    if (nodeData.onColumnSelect) {
+      nodeData.onColumnSelect(newSelected);
     }
   };
 
-  const handleColumnPageChange = (delta, e) => {
+  const handleColumnPageChange = (delta: number, e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    setColumnPage(prev => Math.max(0, Math.min(prev + delta, totalPages - 1)));
+    setColumnPage((prev) => Math.max(0, Math.min(prev + delta, totalPages - 1)));
   };
 
-  const handleKebabClick = (e) => {
+  const handleKebabClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    setOpenMenuPortId(openMenuPortId === data.portId ? null : data.portId);
+    setOpenMenuPortId(openMenuPortId === nodeData.portId ? null : nodeData.portId);
   };
 
-  const handleViewColumnLineage = (e) => {
+  const handleViewColumnLineage = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (data.onViewColumnLineage) {
-      data.onViewColumnLineage(data.portId);
+    if (nodeData.onViewColumnLineage) {
+      nodeData.onViewColumnLineage(nodeData.portId);
     }
     setOpenMenuPortId(null);
   };
@@ -50,14 +53,20 @@ function ColumnPortNode({ id, data }) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [openMenuPortId]);
 
-  const columns = data.columns || [];
+  const columns = nodeData.columns || [];
 
-  // Calculate pagination - use original column order
-  const totalPages = Math.ceil(columns.length / ITEMS_PER_PAGE);
-  const visibleColumns = columns.slice(
-    columnPage * ITEMS_PER_PAGE,
-    (columnPage + 1) * ITEMS_PER_PAGE
-  );
+  // Calculate pagination - use original column order - memoized
+  const totalPages = useMemo(() => Math.ceil(columns.length / ITEMS_PER_PAGE), [columns.length]);
+
+  const visibleColumns = useMemo(() => {
+    return columns.slice(
+      columnPage * ITEMS_PER_PAGE,
+      (columnPage + 1) * ITEMS_PER_PAGE
+    );
+  }, [columns, columnPage]);
+
+  // Track previous visible columns to avoid unnecessary updates
+  const prevVisibleColumnsRef = useRef<string[]>([]);
 
   // Update React Flow internals when columns change
   // Use timeout to ensure handles are registered before notifying parent
@@ -65,18 +74,28 @@ function ColumnPortNode({ id, data }) {
     updateNodeInternals(id);
 
     const timeoutId = setTimeout(() => {
-      if (data.onVisibleColumnsChange) {
-        const visibleColumnIds = visibleColumns.map(col => col.id);
-        data.onVisibleColumnsChange(visibleColumnIds);
+      if (nodeData.onVisibleColumnsChange) {
+        const visibleColumnIds = visibleColumns.map((col) => col.id);
+
+        // Only call onVisibleColumnsChange if the visible columns have actually changed
+        const prevColumns = prevVisibleColumnsRef.current;
+        const columnsChanged =
+          visibleColumnIds.length !== prevColumns.length ||
+          visibleColumnIds.some((colId, i) => colId !== prevColumns[i]);
+
+        if (columnsChanged) {
+          prevVisibleColumnsRef.current = visibleColumnIds;
+          nodeData.onVisibleColumnsChange(visibleColumnIds);
+        }
       }
     }, 1); // 1ms delay ensures proper execution order
 
     return () => clearTimeout(timeoutId);
-  }, [id, columnPage, updateNodeInternals, visibleColumns, data]); // Depend on visibleColumns
+  }, [id, columnPage, updateNodeInternals, visibleColumns, nodeData.onVisibleColumnsChange]);
 
-  const isSelected = data.selected || false;
-  const isInLineage = data.inLineage || false;
-  const isMenuOpen = openMenuPortId === data.portId;
+  const isSelected = nodeData.selected || false;
+  const isInLineage = nodeData.inLineage || false;
+  const isMenuOpen = openMenuPortId === nodeData.portId;
 
   return (
     <div
@@ -85,13 +104,13 @@ function ColumnPortNode({ id, data }) {
       <div className="column-port-header">
         <div className="port-info">
           <div className="port-title-row">
-            <h4 className="port-title">{data.portLabel || 'Port'}</h4>
-            <span className={`port-type-badge ${data.portType}`}>
-              {data.portType === 'input' ? 'IN' : 'OUT'}
+            <h4 className="port-title">{nodeData.portLabel || 'Port'}</h4>
+            <span className={`port-type-badge ${nodeData.portType}`}>
+              {nodeData.portType === 'input' ? 'IN' : 'OUT'}
             </span>
           </div>
           <div className="port-subtitle">
-            <span className="node-label">{data.nodeLabel}</span>
+            <span className="node-label">{nodeData.nodeLabel}</span>
             <span className="column-count">{columns.length} columns</span>
           </div>
         </div>
@@ -129,8 +148,8 @@ function ColumnPortNode({ id, data }) {
 
       <div className="columns-section">
         <div className="columns-list">
-          {visibleColumns.map((column, index) => {
-            const isInLineage = data.lineageColumns && data.lineageColumns.has(column.id);
+          {visibleColumns.map((column) => {
+            const isInLineage = nodeData.lineageColumns && nodeData.lineageColumns.has(column.id);
             const isSelected = selectedColumnId === column.id;
 
             return (
@@ -140,7 +159,7 @@ function ColumnPortNode({ id, data }) {
                 onClick={(e) => handleColumnClick(column, e)}
               >
                 {/* Column handles for column-to-column edges */}
-                {data.portType === 'input' && (
+                {nodeData.portType === 'input' && (
                   <Handle
                     type="target"
                     position={Position.Left}
@@ -148,7 +167,7 @@ function ColumnPortNode({ id, data }) {
                     style={{ left: -5, top: '50%' }}
                   />
                 )}
-                {data.portType === 'output' && (
+                {nodeData.portType === 'output' && (
                   <Handle
                     type="source"
                     position={Position.Right}

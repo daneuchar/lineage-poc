@@ -64,10 +64,20 @@ export interface ColumnPort {
  * Column Port Node Data interface
  */
 export interface ColumnPortNodeData extends Record<string, unknown> {
-  port: ColumnPort;
-  direction: 'upstream' | 'downstream' | 'selected';
-  selectedColumnId?: string | null;
+  portId: string;
+  portLabel: string;
+  nodeId: string;
+  nodeLabel: string;
+  columns: Column[];
+  portType: 'input' | 'output';
+  // Callbacks
   onColumnSelect?: (columnId: string | null) => void;
+  onVisibleColumnsChange?: (visibleColumnIds: string[]) => void;
+  onViewColumnLineage?: (portId: string) => void;
+  // State
+  selected?: boolean;
+  inLineage?: boolean;
+  selectedColumnId?: string | null;
   lineageColumns?: Set<string>;
 }
 
