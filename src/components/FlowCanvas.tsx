@@ -477,11 +477,12 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
       style: {
         ...edge.style,
         stroke,
-        strokeWidth: isInLineage ? 3 : edge.style?.strokeWidth || 1,
+        strokeWidth: isInLineage ? 1 : edge.style?.strokeWidth || 1,
         opacity,
         strokeDasharray: undefined, // No dotted lines
       },
       animated: false, // No animation
+      zIndex: isInternalEdge ? 10 : undefined, // Internal edges on top
     };
   });
 
@@ -527,7 +528,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
         defaultEdgeOptions={{
           type: 'default',
           animated: false,
-          style: { strokeWidth: 1 },
+          style: { strokeWidth: 2 },
         }}
       >
         <Controls>
