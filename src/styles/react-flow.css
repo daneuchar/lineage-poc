@@ -3,6 +3,11 @@
  * Custom styles for React Flow components (handles, minimap, controls)
  */
 
+/* Node Wrapper Styles */
+.react-flow__node-dataproduct {
+  z-index: -1 !important; /* Allow edges to render above the node body */
+}
+
 /* Handle Styles */
 .react-flow__handle {
   width: 6px;

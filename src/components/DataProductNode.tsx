@@ -305,6 +305,13 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                         id={input.id}
                         style={{ left: -5, top: '50%' }}
                       />
+                      {/* Internal handle for input port (right side) - for internal edges */}
+                      <Handle
+                        type="source"
+                        position={Position.Right}
+                        id={`${input.id}-internal`}
+                        style={{ right: -5, top: '50%', opacity: 0 }}
+                      />
                       <span className="port-label">{input.label}</span>
                       <div className="port-menu-container">
                         <button
@@ -389,6 +396,13 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                       } ${isInLineage ? 'in-lineage' : ''}`}
                       onClick={(e) => handleOutputClick(output, e)}
                     >
+                      {/* Internal handle for output port (left side) - for internal edges */}
+                      <Handle
+                        type="target"
+                        position={Position.Left}
+                        id={`${output.id}-internal`}
+                        style={{ left: -5, top: '50%', opacity: 0 }}
+                      />
                       <span className="port-label">{output.label}</span>
                       <div className="port-menu-container">
                         <button

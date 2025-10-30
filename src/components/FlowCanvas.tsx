@@ -41,6 +41,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<DataProductNodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]); // Store relationships from API
+  const [manualEdges, setManualEdges] = useState<ReactFlowEdge[]>([]); // Store manually created edges
   const [selectedNode, setSelectedNode] = useState<string | null>(null); // Track selected port for edge highlighting
   const [expandedNodes, setExpandedNodes] = useState<ExpandedNodesState>({});
   const [visiblePorts, setVisiblePorts] = useState<VisiblePortsState>({}); // Track visible ports per node
@@ -118,8 +119,51 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
       }
     });
 
+    // Internal edges: Connect related ports within the same node using internal handles
+    nodes.forEach((node) => {
+      if (node.type === 'dataproduct' && expandedNodes[node.id]) {
+        const nodeVisiblePorts = visiblePorts[node.id];
+        const visibleInputs = nodeVisiblePorts?.inputs || [];
+        const visibleOutputs = nodeVisiblePorts?.outputs || [];
+
+        // For each visible input port, create edges to its related output ports
+        node.data.inputs?.forEach((input) => {
+          // Only process if this input is visible
+          if (!visibleInputs.includes(input.id)) return;
+
+          // For each related output port
+          input.relatedPorts?.forEach((relatedPortId) => {
+            // Only create edge if the related output port is also visible
+            if (visibleOutputs.includes(relatedPortId)) {
+              builtEdges.push({
+                id: `internal-${node.id}-${input.id}-${relatedPortId}`,
+                source: node.id,
+                sourceHandle: `${input.id}-internal`, // Use internal handle on right side of input
+                target: node.id,
+                targetHandle: `${relatedPortId}-internal`, // Use internal handle on left side of output
+                type: 'default', // Use default bezier curves for smooth, curvy internal edges
+                style: {
+                  stroke: '#f59e0b', // Amber color for internal transformations
+                  strokeWidth: 1.5,
+                  strokeDasharray: '5,5', // Dotted line to distinguish from external edges
+                },
+              });
+            }
+          });
+        });
+      }
+    });
+
+    // Add manual edges to the built edges
+    manualEdges.forEach((edge) => {
+      // Only add manual edge if it's not already in builtEdges (avoid duplicates)
+      if (!builtEdges.some((e) => e.id === edge.id)) {
+        builtEdges.push(edge);
+      }
+    });
+
     return builtEdges;
-  }, [relationships, expandedNodes, visiblePorts]);
+  }, [relationships, expandedNodes, visiblePorts, nodes, manualEdges]);
 
   // Update edges whenever expansion state or visible ports change
   // Use debounce to ensure all handles are registered before building edges
@@ -323,6 +367,38 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
     }));
   }, []);
 
+  // Handle manual edge creation
+  const handleConnect = useCallback((connection: any) => {
+    // Create a new manual edge
+    const newEdge: ReactFlowEdge = {
+      id: `manual-${connection.source}-${connection.sourceHandle || 'default'}-${connection.target}-${connection.targetHandle || 'default'}`,
+      source: connection.source,
+      sourceHandle: connection.sourceHandle,
+      target: connection.target,
+      targetHandle: connection.targetHandle,
+      type: connection.source === connection.target ? 'smoothstep' : 'default',
+      style: {
+        stroke: connection.source === connection.target ? '#a855f7' : '#10b981', // Purple for internal, green for external
+        strokeWidth: 2,
+        strokeDasharray: connection.source === connection.target ? '5,5' : undefined,
+      },
+    };
+
+    setManualEdges((prev) => [...prev, newEdge]);
+    console.log('Manual edge created:', newEdge);
+  }, []);
+
+  // Handle edge deletion (when user presses delete/backspace on selected edge)
+  const handleEdgesDelete = useCallback((edgesToDelete: ReactFlowEdge[]) => {
+    edgesToDelete.forEach((edge) => {
+      // Only allow deletion of manual edges
+      if (edge.id.startsWith('manual-')) {
+        setManualEdges((prev) => prev.filter((e) => e.id !== edge.id));
+        console.log('Manual edge deleted:', edge.id);
+      }
+    });
+  }, []);
+
   // Note: We don't recalculate layout on expand/collapse
   // Layout is only calculated once on initial load
   // Nodes expand/collapse in place to preserve positions
@@ -357,23 +433,35 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
   const styledEdges = edges.map((edge) => {
     const isInLineage = lineage.edges.has(edge.id);
     const hasLineage = lineage.edges.size > 0;
+    const isInternalEdge = edge.id.startsWith('internal-');
+    const isManualEdge = edge.id.startsWith('manual-');
 
     // Also check if edge is connected to a lineage node
     const sourceInLineage = lineage.nodes.has(edge.source);
     const targetInLineage = lineage.nodes.has(edge.target);
     const connectedToLineageNode = sourceInLineage || targetInLineage;
 
+    // Determine edge color based on type and lineage
+    let stroke = edge.style?.stroke || '#9ca3af';
+    if (isInLineage) {
+      stroke = '#3b82f6'; // Direct lineage color (blue)
+    } else if (connectedToLineageNode && hasLineage) {
+      stroke = '#6b7280'; // Connected to lineage node (gray)
+    } else if (isInternalEdge) {
+      stroke = '#f59e0b'; // Amber for internal edges
+    } else if (isManualEdge) {
+      // Keep manual edge's original color (already set in handleConnect)
+      stroke = edge.style?.stroke || '#10b981';
+    }
+
     return {
       ...edge,
       style: {
         ...edge.style,
-        stroke: isInLineage
-          ? '#3b82f6' // Direct lineage color (blue)
-          : connectedToLineageNode && hasLineage
-          ? '#6b7280' // Connected to lineage node (gray)
-          : edge.style?.stroke || '#9ca3af', // Default or original color
+        stroke,
         strokeWidth: isInLineage ? 3 : connectedToLineageNode && hasLineage ? 2 : edge.style?.strokeWidth || 1,
         opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
+        strokeDasharray: (isInternalEdge || (isManualEdge && edge.source === edge.target)) && !isInLineage ? '5,5' : undefined,
       },
       animated: false, // No animation
     };
@@ -408,6 +496,8 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
         edges={styledEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onConnect={handleConnect}
+        onEdgesDelete={handleEdgesDelete}
         onError={onError}
         nodeTypes={nodeTypes}
         fitView

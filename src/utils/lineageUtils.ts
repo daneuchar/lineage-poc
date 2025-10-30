@@ -133,6 +133,8 @@ export function findUpstreamLineage(portId: string, maps: LineageMaps): LineageR
       const relatedPorts = findInternalRelatedPorts(currentPortId, nodeId, nodeData);
       relatedPorts.forEach((relatedPortId) => {
         lineagePorts.add(relatedPortId);
+        // Add internal edge to lineage
+        lineageEdges.add(`internal-${nodeId}-${relatedPortId}-${currentPortId}`);
         // Continue upstream from these input ports
         traverseUpstream(relatedPortId);
       });
@@ -182,6 +184,8 @@ export function findDownstreamLineage(portId: string, maps: LineageMaps): Lineag
       const relatedPorts = findInternalRelatedPorts(currentPortId, nodeId, nodeData);
       relatedPorts.forEach((relatedPortId) => {
         lineagePorts.add(relatedPortId);
+        // Add internal edge to lineage
+        lineageEdges.add(`internal-${nodeId}-${currentPortId}-${relatedPortId}`);
         // Continue downstream from these output ports
         traverseDownstream(relatedPortId);
       });
