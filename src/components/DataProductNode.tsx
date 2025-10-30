@@ -298,6 +298,8 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                         relatedPorts.includes(input.id) ? 'related' : ''
                       } ${isInLineage ? 'in-lineage' : ''}`}
                       onClick={(e) => handleInputClick(input, e)}
+                      onMouseEnter={() => nodeData.onPortHover?.(input.id)}
+                      onMouseLeave={() => nodeData.onPortHover?.(null)}
                     >
                       <Handle
                         type="target"
@@ -395,6 +397,8 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                         relatedPorts.includes(output.id) ? 'related' : ''
                       } ${isInLineage ? 'in-lineage' : ''}`}
                       onClick={(e) => handleOutputClick(output, e)}
+                      onMouseEnter={() => nodeData.onPortHover?.(output.id)}
+                      onMouseLeave={() => nodeData.onPortHover?.(null)}
                     >
                       {/* Internal handle for output port (left side) - for internal edges */}
                       <Handle

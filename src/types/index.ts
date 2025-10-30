@@ -25,6 +25,7 @@ export interface DataProductNodeData extends Record<string, unknown> {
   onToggleExpansion?: () => void;
   onNodeClick?: () => void;
   onPortSelect?: (portId: string | null) => void;
+  onPortHover?: (portId: string | null) => void;
   onVisiblePortsChange?: (visibleInputs: string[], visibleOutputs: string[]) => void;
   onViewColumnLineage?: (portId: string) => void;
   // State

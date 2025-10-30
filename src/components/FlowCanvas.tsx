@@ -43,6 +43,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
   const [relationships, setRelationships] = useState<Relationship[]>([]); // Store relationships from API
   const [manualEdges, setManualEdges] = useState<ReactFlowEdge[]>([]); // Store manually created edges
   const [selectedNode, setSelectedNode] = useState<string | null>(null); // Track selected port for edge highlighting
+  const [hoveredPort, setHoveredPort] = useState<string | null>(null); // Track hovered port for internal edge visibility
   const [expandedNodes, setExpandedNodes] = useState<ExpandedNodesState>({});
   const [visiblePorts, setVisiblePorts] = useState<VisiblePortsState>({}); // Track visible ports per node
   const [loading, setLoading] = useState(true);
@@ -367,6 +368,10 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
     }));
   }, []);
 
+  const handlePortHover = useCallback((portId: string | null) => {
+    setHoveredPort(portId);
+  }, []);
+
   // Handle manual edge creation
   const handleConnect = useCallback((connection: any) => {
     // Create a new manual edge
@@ -415,6 +420,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
           onToggleExpansion: () => handleToggleExpansion(node.id),
           onNodeClick: () => handleNodeClick(node.id),
           onPortSelect: handlePortSelect,
+          onPortHover: handlePortHover,
           onVisiblePortsChange: (visibleInputs: string[], visibleOutputs: string[]) =>
             handleVisiblePortsChange(node.id, visibleInputs, visibleOutputs),
           onViewColumnLineage: onViewColumnLineage,
@@ -445,8 +451,6 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
     let stroke = edge.style?.stroke || '#9ca3af';
     if (isInLineage) {
       stroke = '#3b82f6'; // Direct lineage color (blue)
-    } else if (connectedToLineageNode && hasLineage) {
-      stroke = '#6b7280'; // Connected to lineage node (gray)
     } else if (isInternalEdge) {
       stroke = '#f59e0b'; // Amber for internal edges
     } else if (isManualEdge) {
@@ -454,14 +458,28 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
       stroke = edge.style?.stroke || '#10b981';
     }
 
+    // Calculate opacity: internal edges only visible when hovering over connected port
+    let opacity = 1;
+    if (isInternalEdge) {
+      // Check if this internal edge is connected to the hovered port
+      // Internal edge ID format: internal-{nodeId}-{inputId}-{outputId}
+      const isConnectedToHoveredPort = hoveredPort && edge.id.includes(hoveredPort);
+
+      // Internal edges visible ONLY on hover
+      opacity = isConnectedToHoveredPort ? 1 : 0;
+    } else if (hasLineage) {
+      // Other edges: full opacity if in lineage, dimmed otherwise
+      opacity = isInLineage ? 1 : 0.2;
+    }
+
     return {
       ...edge,
       style: {
         ...edge.style,
         stroke,
-        strokeWidth: isInLineage ? 3 : connectedToLineageNode && hasLineage ? 2 : edge.style?.strokeWidth || 1,
-        opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
-        strokeDasharray: (isInternalEdge || (isManualEdge && edge.source === edge.target)) && !isInLineage ? '5,5' : undefined,
+        strokeWidth: isInLineage ? 3 : edge.style?.strokeWidth || 1,
+        opacity,
+        strokeDasharray: undefined, // No dotted lines
       },
       animated: false, // No animation
     };
