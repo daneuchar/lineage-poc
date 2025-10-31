@@ -10,8 +10,6 @@ import {
   ControlButton,
   type Node as ReactFlowNode,
   type Edge as ReactFlowEdge,
-  type OnNodesChange,
-  type OnEdgesChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
