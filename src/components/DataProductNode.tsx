@@ -256,6 +256,8 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
         </>
       ) : (
         <>
+          <Handle type="target" position={Position.Left} style={{opacity: 0, pointerEvents: 'none'}} />
+          <Handle type="source" position={Position.Right} style={{opacity: 0, pointerEvents: 'none'}} />
           <div className="dataproduct-header">
             <div className="header-title-row">
               <Tooltip title="Euchar, Daniel" arrow>
