@@ -27,6 +27,7 @@ export interface DataProductNodeData extends Record<string, unknown> {
   onPortSelect?: (portId: string | null) => void;
   onVisiblePortsChange?: (visibleInputs: string[], visibleOutputs: string[]) => void;
   onViewColumnLineage?: (portId: string) => void;
+  onPortHover?: (portId: string | null) => void;
   // State
   selected?: boolean;
   selectedPortId?: string | null;

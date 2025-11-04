@@ -25,6 +25,9 @@
   --lineage-port-hover-bg: #a7f3d0;
   --lineage-port-hover-border: #059669;
 
+  /* Edge Colors */
+  --edge-hover: #f59e0b;
+
   /* Port Colors */
   --port-bg: #f9fafb;
   --port-border: #e5e7eb;

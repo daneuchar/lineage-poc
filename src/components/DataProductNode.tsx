@@ -283,11 +283,7 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
             <div className="ports-section input-ports">
               <div className="ports-header">
                 Input Ports
-                {inputTotalPages > 1 && (
-                  <span className="page-indicator">
-                    {inputPage + 1}/{inputTotalPages}
-                  </span>
-                )}
+                
               </div>
               <div className="ports-list">
                 {visibleInputs.map((input) => {
@@ -300,6 +296,8 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                         relatedPorts.includes(input.id) ? 'related' : ''
                       } ${isInLineage ? 'in-lineage' : ''}`}
                       onClick={(e) => handleInputClick(input, e)}
+                      onMouseEnter={() => nodeData.onPortHover?.(input.id)}
+                      onMouseLeave={() => nodeData.onPortHover?.(null)}
                     >
                       <Handle
                         type="target"
@@ -365,6 +363,11 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                   >
                     ‹
                   </button>
+                
+                  <span className="page-indicator">
+                    {inputPage + 1} of {inputTotalPages}
+                  </span>
+                
                   <button
                     className="pagination-button"
                     onClick={(e) => handleInputPageChange(1, e)}
@@ -380,11 +383,7 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
             <div className="ports-section output-ports">
               <div className="ports-header">
                 Output Ports
-                {outputTotalPages > 1 && (
-                  <span className="page-indicator">
-                    {outputPage + 1}/{outputTotalPages}
-                  </span>
-                )}
+                
               </div>
               <div className="ports-list">
                 {visibleOutputs.map((output) => {
@@ -397,6 +396,8 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                         relatedPorts.includes(output.id) ? 'related' : ''
                       } ${isInLineage ? 'in-lineage' : ''}`}
                       onClick={(e) => handleOutputClick(output, e)}
+                      onMouseEnter={() => nodeData.onPortHover?.(output.id)}
+                      onMouseLeave={() => nodeData.onPortHover?.(null)}
                     >
                       {/* Internal handle for output port (left side) - for internal edges */}
                       <Handle
@@ -462,6 +463,9 @@ function DataProductNode({ id, data }: NodeProps<Record<string, unknown>>) {
                   >
                     ‹
                   </button>
+                  <span className="page-indicator">
+                    {outputPage + 1} of {outputTotalPages}
+                  </span>
                   <button
                     className="pagination-button"
                     onClick={(e) => handleOutputPageChange(1, e)}

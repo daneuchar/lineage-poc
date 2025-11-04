@@ -41,6 +41,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
   const [relationships, setRelationships] = useState<Relationship[]>([]); // Store relationships from API
   const [manualEdges, setManualEdges] = useState<ReactFlowEdge[]>([]); // Store manually created edges
   const [selectedNode, setSelectedNode] = useState<string | null>(null); // Track selected port for edge highlighting
+  const [hoveredPort, setHoveredPort] = useState<string | null>(null); // Track hovered port for edge highlighting
   const [expandedNodes, setExpandedNodes] = useState<ExpandedNodesState>({});
   const [visiblePorts, setVisiblePorts] = useState<VisiblePortsState>({}); // Track visible ports per node
   const [loading, setLoading] = useState(true);
@@ -141,9 +142,8 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
                 targetHandle: `${relatedPortId}-internal`, // Use internal handle on left side of output
                 type: 'default', // Use default bezier curves for smooth, curvy internal edges
                 style: {
-                  stroke: '#f59e0b', // Amber color for internal transformations
-                  strokeWidth: 1.5,
-                  strokeDasharray: '5,5', // Dotted line to distinguish from external edges
+                  stroke: '#9ca3af', // Amber color for internal transformations
+                  strokeWidth: 1,                  
                 },
               });
             }
@@ -365,6 +365,10 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
     }));
   }, []);
 
+  const handlePortHover = useCallback((portId: string | null) => {
+    setHoveredPort(portId);
+  }, []);
+
   // Handle manual edge creation
   const handleConnect = useCallback((connection: any) => {
     // Create a new manual edge
@@ -377,7 +381,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
       type: connection.source === connection.target ? 'smoothstep' : 'default',
       style: {
         stroke: connection.source === connection.target ? '#a855f7' : '#10b981', // Purple for internal, green for external
-        strokeWidth: 2,
+        strokeWidth: 1,
         strokeDasharray: connection.source === connection.target ? '5,5' : undefined,
       },
     };
@@ -401,6 +405,22 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
   // Layout is only calculated once on initial load
   // Nodes expand/collapse in place to preserve positions
 
+  // Helper function to check if an edge is connected to a port
+  const isEdgeConnectedToPort = useCallback((edge: ReactFlowEdge, portId: string): boolean => {
+    // External port-to-port edges (direct connection)
+    if (edge.sourceHandle === portId || edge.targetHandle === portId) {
+      return true;
+    }
+
+    // Internal edges use handles with "-internal" suffix
+    // Format: sourceHandle = "portId-internal", targetHandle = "portId-internal"
+    if (edge.sourceHandle === `${portId}-internal` || edge.targetHandle === `${portId}-internal`) {
+      return true;
+    }
+
+    return false;
+  }, []);
+
   // Add callbacks to dataproduct nodes
   const nodesWithCallback = nodes.map((node) => {
     if (node.type === 'dataproduct') {
@@ -416,6 +436,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
           onVisiblePortsChange: (visibleInputs: string[], visibleOutputs: string[]) =>
             handleVisiblePortsChange(node.id, visibleInputs, visibleOutputs),
           onViewColumnLineage: onViewColumnLineage,
+          onPortHover: handlePortHover,
           selected: selectedNode === node.id,
           selectedPortId: selectedNode, // Pass the globally selected port ID
           expanded,
@@ -427,39 +448,40 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
     return node;
   });
 
-  // Style edges based on lineage
+  // Style edges based on lineage and hover state
   const styledEdges = edges.map((edge) => {
     const isInLineage = lineage.edges.has(edge.id);
     const hasLineage = lineage.edges.size > 0;
     const isInternalEdge = edge.id.startsWith('internal-');
     const isManualEdge = edge.id.startsWith('manual-');
 
+    // Check if edge is connected to hovered port AND is in lineage
+    const isConnectedToHover = hoveredPort && isInLineage ? isEdgeConnectedToPort(edge, hoveredPort) : false;
+
     // Also check if edge is connected to a lineage node
     const sourceInLineage = lineage.nodes.has(edge.source);
     const targetInLineage = lineage.nodes.has(edge.target);
     const connectedToLineageNode = sourceInLineage || targetInLineage;
 
-    // Determine edge color based on type and lineage
+    // Determine edge color based on type, hover, and lineage
+    // Priority: hover (only for lineage edges) > lineage > connected to lineage > internal > default
     let stroke = edge.style?.stroke || '#9ca3af';
-    if (isInLineage) {
+    if (isConnectedToHover) {
+      stroke = '#f59e0b'; // Amber for hovered edges (HIGHEST PRIORITY, only if in lineage)
+    } else if (isInLineage) {
       stroke = '#3b82f6'; // Direct lineage color (blue)
-    } else if (connectedToLineageNode && hasLineage) {
+    } else if (connectedToLineageNode && hasLineage || isInternalEdge) {
       stroke = '#6b7280'; // Connected to lineage node (gray)
-    } else if (isInternalEdge) {
-      stroke = '#f59e0b'; // Amber for internal edges
-    } else if (isManualEdge) {
-      // Keep manual edge's original color (already set in handleConnect)
-      stroke = edge.style?.stroke || '#10b981';
-    }
+    } 
 
     return {
       ...edge,
       style: {
         ...edge.style,
         stroke,
-        strokeWidth: isInLineage ? 3 : connectedToLineageNode && hasLineage ? 2 : edge.style?.strokeWidth || 1,
-        opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
-        strokeDasharray: (isInternalEdge || (isManualEdge && edge.source === edge.target)) && !isInLineage ? '5,5' : undefined,
+        strokeWidth: isConnectedToHover ? 1.5 : isInLineage ? 1 : connectedToLineageNode && hasLineage ? 1 : edge.style?.strokeWidth || 1,
+        opacity: isConnectedToHover ? 1 : !hasLineage ? 1 : isInLineage ? 1 : 0,
+
       },
       animated: false, // No animation
     };
