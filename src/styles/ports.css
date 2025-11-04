@@ -51,7 +51,6 @@
   cursor: pointer;
   color: var(--port-text);
   transition: all 0.2s ease;
-  z-index: 1; /* Keep ports above edges for clickability */
 }
 
 .port-item:hover {

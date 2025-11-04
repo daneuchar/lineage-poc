@@ -453,7 +453,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
     const isInLineage = lineage.edges.has(edge.id);
     const hasLineage = lineage.edges.size > 0;
     const isInternalEdge = edge.id.startsWith('internal-');
-    const isManualEdge = edge.id.startsWith('manual-');
+  
 
     // Check if edge is connected to hovered port AND is in lineage
     const isConnectedToHover = hoveredPort && isInLineage ? isEdgeConnectedToPort(edge, hoveredPort) : false;
@@ -470,9 +470,11 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
       stroke = '#f59e0b'; // Amber for hovered edges (HIGHEST PRIORITY, only if in lineage)
     } else if (isInLineage) {
       stroke = '#3b82f6'; // Direct lineage color (blue)
-    } else if (connectedToLineageNode && hasLineage || isInternalEdge) {
+    } else if (connectedToLineageNode && hasLineage) {
       stroke = '#6b7280'; // Connected to lineage node (gray)
-    } 
+    } else if (isInternalEdge) {
+      stroke = '#b98e2c'; // Internal edge color (amber)
+    }
 
     return {
       ...edge,
