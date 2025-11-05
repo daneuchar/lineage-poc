@@ -284,3 +284,17 @@
   gap: 60px; /* Increased spacing between input and output sections for internal edges */
   cursor: default;
 }
+
+/* Node Resize Styles */
+/* Node resize styles */
+.dataproduct-node .react-flow__resize-control {
+  background: var(--node-bg);
+  border: 1px solid var(--node-border-red);
+  border-radius: 2px;
+  width: 8px;
+  height: 8px;
+}
+
+.dataproduct-node .react-flow__resize-control:hover {
+  background: var(--node-border-red);
+}

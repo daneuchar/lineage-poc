@@ -10,17 +10,17 @@
  */
 
 /* CSS Variables - Must be first */
-@import './variables.css';
+@import "./variables.css";
 
 /* Component Styles */
-@import './dataproduct-node.css';
-@import './ports.css';
-@import './column-port-node.css';
-@import './columns.css';
+@import "./dataproduct-node.css";
+@import "./ports.css";
+@import "./column-port-node.css";
+@import "./columns.css";
 
 /* React Flow Library Overrides */
-@import './react-flow.css';
+@import "./react-flow.css";
 
 /* Layout & Utilities */
-@import './layout.css';
-@import './column-lineage.css';
+@import "./layout.css";
+@import "./column-lineage.css";
