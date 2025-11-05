@@ -8,7 +8,14 @@ import {
 import { useState, useEffect, useMemo, useRef, type MouseEvent } from "react";
 import type { NodeProps } from "@xyflow/react";
 import type { DataProductNodeData, Port } from "../types";
-import { ExpandLessOutlined, ExpandMoreOutlined } from "@mui/icons-material";
+import {
+  AccountTree,
+  ChevronLeft,
+  ChevronRight,
+  ExpandLessOutlined,
+  ExpandMoreOutlined,
+  MoreVert,
+} from "@mui/icons-material";
 
 function DataProductNode({ id, data, selected }: NodeProps) {
   const nodeData = data as DataProductNodeData;
@@ -19,40 +26,42 @@ function DataProductNode({ id, data, selected }: NodeProps) {
   const [openMenuPortId, setOpenMenuPortId] = useState<string | null>(null); // Track which port's kebab menu is open
   const [availableHeight, setAvailableHeight] = useState(0);
   const nodeRef = useRef<HTMLDivElement>(null);
-  
+
   // Constants for layout calculations
-  const portItemHeight = 32; // Height of each port item in pixels
+  const portItemHeight = 36; // Height of each port item in pixels
   const headerHeight = 80; // Height of node header
-  const footerHeight = 40; // Height of pagination controls if needed
   const sectionHeaderHeight = 30; // Height of "Input Ports"/"Output Ports" headers
   const portsSectionPadding = 16; // Padding around ports section
-  
+
   // Calculate max items that can fit in the available space
   const getMaxItemsPerSection = () => {
     if (!nodeData.expanded) return 0;
-    
+
     // Calculate space available for port items
-    const availablePortSpace = Math.max(0, availableHeight - headerHeight - sectionHeaderHeight - portsSectionPadding);
-    
+    const availablePortSpace = Math.max(
+      0,
+      availableHeight - headerHeight - sectionHeaderHeight - portsSectionPadding
+    );
+
     // Calculate how many items can fit
     const maxItems = Math.floor(availablePortSpace / portItemHeight);
-    return Math.max(3, maxItems); // Show at least 3 items per page
+    return Math.max(5, maxItems); // Show at least 3 items per page
   };
-  
+
   // Setup resize observer
   useEffect(() => {
     if (!nodeRef.current) return;
-    
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setAvailableHeight(entry.contentRect.height);
       }
     });
-    
+
     observer.observe(nodeRef.current);
     return () => observer.disconnect();
   }, []);
-  
+
   // Reset pagination when available height changes
   useEffect(() => {
     if (nodeData.expanded) {
@@ -269,41 +278,9 @@ function DataProductNode({ id, data, selected }: NodeProps) {
       className={`dataproduct-node ${nodeData.selected ? "selected" : ""} ${
         nodeData.expanded ? "expanded" : "collapsed"
       } ${nodeData.inLineage ? "in-lineage" : ""}`}
-      style={{ height: nodeData.expanded ? '100%' : 'auto' }}
+      style={{ height: nodeData.expanded ? "100%" : "auto" }}
     >
-      <Box className="dataproduct-tag">
-        <svg
-          className="animate-pulse"
-          xmlns="http://www.w3.org/2000/svg"
-          width="8"
-          height="8"
-          fill="none"
-          viewBox="0 0 12 12"
-        >
-          <g>
-            <circle cx="6" cy="6" r=".8" fill="var(--ubs-white)"></circle>
-            <circle
-              cx="6"
-              cy="6"
-              r="5"
-              stroke="var(--ubs-white)"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.1"
-            ></circle>
-            <circle
-              cx="6"
-              cy="6"
-              r="2.5"
-              stroke="var(--ubs-white)"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.1"
-            ></circle>
-          </g>
-        </svg>
-        <span>DataProduct</span>
-      </Box>
+      <Box className="dataproduct-tag">DataProduct</Box>
       {!nodeData.expanded ? (
         <>
           <Handle type="target" position={Position.Left} />
@@ -339,8 +316,8 @@ function DataProductNode({ id, data, selected }: NodeProps) {
         <>
           {selected && (
             <NodeResizeControl
-              minWidth={150}
-              minHeight={30}
+              minWidth={400}
+              minHeight={306}
               position="bottom-right"
             />
           )}
@@ -401,7 +378,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                         type="source"
                         position={Position.Right}
                         id={`${input.id}-internal`}
-                        style={{ right: -5, top: "50%", opacity: 0 }}
+                        style={{ right: -5, top: "50%" }}
                       />
                       <span className="port-label">{input.label}</span>
                       <div className="port-menu-container">
@@ -410,16 +387,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                           onClick={(e) => handleKebabClick(input.id, e)}
                           title="Port options"
                         >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="currentColor"
-                          >
-                            <circle cx="8" cy="3" r="1.5" />
-                            <circle cx="8" cy="8" r="1.5" />
-                            <circle cx="8" cy="13" r="1.5" />
-                          </svg>
+                          <MoreVert sx={{ fontSize: 16 }} />
                         </button>
                         {isMenuOpen && (
                           <div className="port-menu-dropdown">
@@ -471,7 +439,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                     onClick={(e) => handleInputPageChange(-1, e)}
                     disabled={inputPage === 0}
                   >
-                    ‹
+                    <ChevronLeft />
                   </button>
 
                   <span className="page-indicator">
@@ -483,7 +451,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                     onClick={(e) => handleInputPageChange(1, e)}
                     disabled={inputPage === inputTotalPages - 1}
                   >
-                    ›
+                    <ChevronRight />
                   </button>
                 </div>
               )}
@@ -515,7 +483,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                         type="target"
                         position={Position.Left}
                         id={`${output.id}-internal`}
-                        style={{ left: -5, top: "50%", opacity: 0 }}
+                        style={{ left: -5, top: "50%" }}
                       />
                       <span className="port-label">{output.label}</span>
                       <div className="port-menu-container">
@@ -524,16 +492,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                           onClick={(e) => handleKebabClick(output.id, e)}
                           title="Port options"
                         >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="currentColor"
-                          >
-                            <circle cx="8" cy="3" r="1.5" />
-                            <circle cx="8" cy="8" r="1.5" />
-                            <circle cx="8" cy="13" r="1.5" />
-                          </svg>
+                          <MoreVert sx={{ fontSize: 16 }} />
                         </button>
                         {isMenuOpen && (
                           <div className="port-menu-dropdown">
@@ -543,32 +502,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                                 handleViewColumnLineage(output.id, e)
                               }
                             >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.5"
-                              >
-                                <rect x="2" y="2" width="4" height="4" rx="1" />
-                                <rect
-                                  x="10"
-                                  y="2"
-                                  width="4"
-                                  height="4"
-                                  rx="1"
-                                />
-                                <rect
-                                  x="10"
-                                  y="10"
-                                  width="4"
-                                  height="4"
-                                  rx="1"
-                                />
-                                <line x1="6" y1="4" x2="10" y2="4" />
-                                <line x1="12" y1="6" x2="12" y2="10" />
-                              </svg>
+                              <AccountTree sx={{ fontSize: 14 }} />
                               View Column Lineage
                             </button>
                           </div>
@@ -591,7 +525,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                     onClick={(e) => handleOutputPageChange(-1, e)}
                     disabled={outputPage === 0}
                   >
-                    ‹
+                    <ChevronLeft />
                   </button>
                   <span className="page-indicator">
                     {outputPage + 1} of {outputTotalPages}
@@ -601,7 +535,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
                     onClick={(e) => handleOutputPageChange(1, e)}
                     disabled={outputPage === outputTotalPages - 1}
                   >
-                    ›
+                    <ChevronRight />
                   </button>
                 </div>
               )}

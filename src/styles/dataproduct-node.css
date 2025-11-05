@@ -8,7 +8,8 @@
   border: 1px solid var(--node-border-red);
   border-radius: 0px 6px 6px 6px;
   padding: 8px 12px;
-  min-width: 80px;
+  min-width: 220px;
+  min-height: 100px;
   box-shadow: var(--shadow-sm);
   color: var(--node-text);
   transition: all 0.2s ease;
@@ -18,7 +19,7 @@
 
 .dataproduct-tag {
   position: absolute;
-  top: -19px;
+  top: -24px;
   left: -1px;
   display: flex;
   align-items: center;
@@ -32,16 +33,9 @@
   z-index: 1; /* Keep tag above edges */
 }
 
-.dataproduct-tag svg {
-  flex-shrink: 0;
-}
-
-.dataproduct-tag span {
-  line-height: 1;
-}
-
 .dataproduct-node.collapsed {
-  min-width: 80px;
+  min-width: 220px;
+  min-height: 100px;
   padding: 12px;
   width: 220px;
 }
@@ -53,6 +47,7 @@
 
 .dataproduct-node.expanded {
   min-width: 400px;
+  min-height: 306px;
   padding: 12px;
   cursor: default;
 }
