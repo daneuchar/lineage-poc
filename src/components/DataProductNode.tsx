@@ -54,13 +54,23 @@ function DataProductNode({ id, data, selected }: NodeProps) {
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setAvailableHeight(entry.contentRect.height);
+        const height = entry.contentRect.height;
+        if (height !== availableHeight) {
+          setAvailableHeight(height);
+          // Trigger a single node internal update
+          setTimeout(() => {
+            updateNodeInternals(id);
+          }, 100);
+        }
       }
     });
 
     observer.observe(nodeRef.current);
-    return () => observer.disconnect();
-  }, []);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [availableHeight, id, updateNodeInternals]);
 
   // Reset pagination when available height changes
   useEffect(() => {
@@ -78,9 +88,14 @@ function DataProductNode({ id, data, selected }: NodeProps) {
     if (nodeData.onToggleExpansion) {
       nodeData.onToggleExpansion();
     }
-    // Reset pagination when toggling
+
     setInputPage(0);
     setOutputPage(0);
+
+    // Single delayed update after expansion state changes
+    setTimeout(() => {
+      updateNodeInternals(id);
+    }, 100);
   };
 
   const handleInputClick = (input: Port, e: MouseEvent<HTMLDivElement>) => {
@@ -208,68 +223,50 @@ function DataProductNode({ id, data, selected }: NodeProps) {
 
   // Update React Flow internals and notify parent about visible ports
   useEffect(() => {
-    if (nodeData.expanded) {
-      // First, update React Flow's internal handle registry
-      updateNodeInternals(id);
+    // Update node internals when expansion state changes
+    updateNodeInternals(id);
 
-      // Wait longer for React Flow to fully process and register the handles
-      // This delay is critical to prevent "Couldn't create edge" errors
-      const timeoutId = setTimeout(() => {
-        if (nodeData.onVisiblePortsChange) {
-          // Recalculate visible inputs/outputs based on current page
-          const currentVisibleInputs = sortedInputs.slice(
-            inputPage * itemsPerPage,
-            (inputPage + 1) * itemsPerPage
-          );
-          const currentVisibleOutputs = sortedOutputs.slice(
-            outputPage * itemsPerPage,
-            (outputPage + 1) * itemsPerPage
-          );
+    // Calculate visible ports
+    const visibleInputIds = nodeData.expanded
+      ? sortedInputs
+          .slice(inputPage * itemsPerPage, (inputPage + 1) * itemsPerPage)
+          .map((input) => input.id)
+      : [];
 
-          const visibleInputIds = currentVisibleInputs.map((input) => input.id);
-          const visibleOutputIds = currentVisibleOutputs.map(
-            (output) => output.id
-          );
+    const visibleOutputIds = nodeData.expanded
+      ? sortedOutputs
+          .slice(outputPage * itemsPerPage, (outputPage + 1) * itemsPerPage)
+          .map((output) => output.id)
+      : [];
 
-          // Only call onVisiblePortsChange if the visible ports have actually changed
-          const prevInputs = prevVisiblePortsRef.current.inputs;
-          const prevOutputs = prevVisiblePortsRef.current.outputs;
-          const inputsChanged =
-            visibleInputIds.length !== prevInputs.length ||
-            visibleInputIds.some((id, i) => id !== prevInputs[i]);
-          const outputsChanged =
-            visibleOutputIds.length !== prevOutputs.length ||
-            visibleOutputIds.some((id, i) => id !== prevOutputs[i]);
+    // Only update if the visible ports have changed
+    const prevInputs = prevVisiblePortsRef.current.inputs;
+    const prevOutputs = prevVisiblePortsRef.current.outputs;
 
-          if (inputsChanged || outputsChanged) {
-            prevVisiblePortsRef.current = {
-              inputs: visibleInputIds,
-              outputs: visibleOutputIds,
-            };
-            nodeData.onVisiblePortsChange(visibleInputIds, visibleOutputIds);
-          }
-        }
-      }, 1); // 1ms delay ensures proper execution order
+    const inputsChanged =
+      visibleInputIds.length !== prevInputs.length ||
+      visibleInputIds.some((id, i) => id !== prevInputs[i]);
 
-      return () => clearTimeout(timeoutId);
-    } else if (!nodeData.expanded && nodeData.onVisiblePortsChange) {
-      // When collapsed, clear visible ports immediately - only if they're not already empty
-      const prevInputs = prevVisiblePortsRef.current.inputs;
-      const prevOutputs = prevVisiblePortsRef.current.outputs;
-      if (prevInputs.length > 0 || prevOutputs.length > 0) {
-        prevVisiblePortsRef.current = { inputs: [], outputs: [] };
-        nodeData.onVisiblePortsChange([], []);
-      }
+    const outputsChanged =
+      visibleOutputIds.length !== prevOutputs.length ||
+      visibleOutputIds.some((id, i) => id !== prevOutputs[i]);
+
+    if ((inputsChanged || outputsChanged) && nodeData.onVisiblePortsChange) {
+      prevVisiblePortsRef.current = {
+        inputs: visibleInputIds,
+        outputs: visibleOutputIds,
+      };
+      nodeData.onVisiblePortsChange(visibleInputIds, visibleOutputIds);
     }
   }, [
     id,
+    nodeData.expanded,
     inputPage,
     outputPage,
-    nodeData.expanded,
-    nodeData.onVisiblePortsChange,
-    updateNodeInternals,
+    itemsPerPage,
     sortedInputs,
     sortedOutputs,
+    updateNodeInternals,
   ]);
 
   return (
