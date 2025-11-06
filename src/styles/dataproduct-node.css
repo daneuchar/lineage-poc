@@ -46,8 +46,8 @@
 }
 
 .dataproduct-node.expanded {
-  min-width: 400px;
-  min-height: 306px;
+  min-width: 440px;
+  min-height: 338px;
   padding: 12px;
   cursor: default;
 }
@@ -276,7 +276,8 @@
 /* Expanded Node Ports Container */
 .dataproduct-ports {
   display: flex;
-  gap: 60px; /* Increased spacing between input and output sections for internal edges */
+  justify-content: space-between;
+  gap: 100px; /* Minimum spacing between input and output sections */
   cursor: default;
 }
 

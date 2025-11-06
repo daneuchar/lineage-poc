@@ -28,7 +28,7 @@ function DataProductNode({ id, data, selected }: NodeProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
 
   // Constants for layout calculations
-  const portItemHeight = 36; // Height of each port item in pixels
+  const portItemHeight = 41; // Height of each port item in pixels
   const headerHeight = 80; // Height of node header
   const sectionHeaderHeight = 30; // Height of "Input Ports"/"Output Ports" headers
   const portsSectionPadding = 16; // Padding around ports section
@@ -313,8 +313,8 @@ function DataProductNode({ id, data, selected }: NodeProps) {
         <>
           {selected && (
             <NodeResizeControl
-              minWidth={400}
-              minHeight={306}
+              minWidth={440}
+              minHeight={338}
               position="bottom-right"
             />
           )}
