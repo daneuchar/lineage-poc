@@ -225,6 +225,17 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
           assumeAllExpanded
         );
         setNodes(layoutNodes);
+
+        // Fit view after layout is complete
+        // Use setTimeout to ensure nodes are rendered before fitting
+        setTimeout(() => {
+          fitView({
+            padding: 0.2,
+            duration: 800,
+            minZoom: 0.1,
+            maxZoom: 1.5,
+          });
+        }, 100);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error occurred";
@@ -235,7 +246,7 @@ function FlowCanvas({ onViewColumnLineage }: FlowCanvasProps) {
     };
 
     loadFlowData();
-  }, [setNodes, calculateLayout]);
+  }, [setNodes, calculateLayout, fitView]);
 
   // Suppress handle-related errors during pagination transitions
   const onError = useCallback((code: string, message: string) => {
