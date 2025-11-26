@@ -413,10 +413,362 @@ async function getColumnLineage(portId: string): Promise<ColumnLineageData> {
   return response.json();
 }
 
+/**
+ * Get table-based column lineage with embedded relationships
+ */
+async function getTableColumnLineage(): Promise<import('../types').ColumnLineageData> {
+  if (useMockApi) {
+    await delay(800); // Simulate network delay
+
+    return {
+      tables: [
+        {
+          id: 'table-1',
+          type: 'source',
+          data: {
+            dp_name: 'Customer Raw Data',
+            dp_id: 'dp-raw-customers',
+            op_id: 'op-extract-001',
+            op_name: 'Customer Data Extract',
+            schema: '/raw_data/customers',
+            owner: 'data-engineering@company.com',
+            tags: ['pii', 'customer', 'raw'],
+            columns: [
+              {
+                id: 'table-1-col-1',
+                name: 'customer_id',
+                dataType: 'INTEGER',
+                nullable: false,
+                isPrimaryKey: true,
+                isForeignKey: false,
+                description: 'Unique customer identifier',
+                relatedColumns: ['table-3-col-1'], // → Customer Orders Staging
+              },
+              {
+                id: 'table-1-col-2',
+                name: 'first_name',
+                dataType: 'VARCHAR(100)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer first name',
+                tags: ['pii'],
+                relatedColumns: ['table-3-col-2'], // → full_name (concatenated)
+              },
+              {
+                id: 'table-1-col-3',
+                name: 'last_name',
+                dataType: 'VARCHAR(100)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer last name',
+                tags: ['pii'],
+                relatedColumns: ['table-3-col-2'], // → full_name (concatenated)
+              },
+              {
+                id: 'table-1-col-4',
+                name: 'email',
+                dataType: 'VARCHAR(255)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer email address',
+                tags: ['pii', 'contact'],
+                relatedColumns: ['table-3-col-3'], // → email
+              },
+              {
+                id: 'table-1-col-5',
+                name: 'created_at',
+                dataType: 'TIMESTAMP',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Account creation timestamp',
+              },
+              {
+                id: 'table-1-col-6',
+                name: 'country_code',
+                dataType: 'VARCHAR(2)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'ISO country code',
+                relatedColumns: ['table-3-col-8'], // → country_code
+              },
+            ],
+          },
+        },
+        {
+          id: 'table-2',
+          type: 'source',
+          data: {
+            dp_name: 'Orders Raw Data',
+            dp_id: 'dp-raw-orders',
+            op_id: 'op-extract-002',
+            op_name: 'Orders Data Extract',
+            schema: '/raw_data/orders',
+            owner: 'data-engineering@company.com',
+            tags: ['transactional', 'orders', 'raw'],
+            columns: [
+              {
+                id: 'table-2-col-1',
+                name: 'order_id',
+                dataType: 'INTEGER',
+                nullable: false,
+                isPrimaryKey: true,
+                isForeignKey: false,
+                description: 'Unique order identifier',
+                relatedColumns: ['table-3-col-4'], // → total_orders (aggregated)
+              },
+              {
+                id: 'table-2-col-2',
+                name: 'customer_id',
+                dataType: 'INTEGER',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: true,
+                description: 'Reference to customer',
+              },
+              {
+                id: 'table-2-col-3',
+                name: 'order_amount',
+                dataType: 'DECIMAL(10,2)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Total order amount',
+                relatedColumns: ['table-3-col-5'], // → total_spent (aggregated)
+              },
+              {
+                id: 'table-2-col-4',
+                name: 'order_date',
+                dataType: 'DATE',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Order placement date',
+                relatedColumns: ['table-3-col-6', 'table-3-col-7'], // → first/last order date
+              },
+              {
+                id: 'table-2-col-5',
+                name: 'status',
+                dataType: 'VARCHAR(50)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Order status',
+              },
+            ],
+          },
+        },
+        {
+          id: 'table-3',
+          type: 'transformation',
+          data: {
+            dp_name: 'Customer Orders Staging',
+            dp_id: 'dp-staging-customer-orders',
+            op_id: 'op-transform-001',
+            op_name: 'Customer Orders ETL',
+            schema: '/staging/customer_orders',
+            owner: 'analytics-team@company.com',
+            tags: ['staging', 'customer-orders', 'aggregated'],
+            columns: [
+              {
+                id: 'table-3-col-1',
+                name: 'customer_id',
+                dataType: 'INTEGER',
+                nullable: false,
+                isPrimaryKey: true,
+                isForeignKey: false,
+                description: 'Customer identifier',
+                relatedColumns: ['table-4-col-1'], // → Customer Analytics
+              },
+              {
+                id: 'table-3-col-2',
+                name: 'full_name',
+                dataType: 'VARCHAR(255)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer full name',
+                tags: ['pii'],
+                relatedColumns: ['table-4-col-2'], // → customer_name
+              },
+              {
+                id: 'table-3-col-3',
+                name: 'email',
+                dataType: 'VARCHAR(255)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer email',
+                tags: ['pii', 'contact'],
+                relatedColumns: ['table-4-col-3'], // → email
+              },
+              {
+                id: 'table-3-col-4',
+                name: 'total_orders',
+                dataType: 'INTEGER',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Total number of orders',
+                relatedColumns: ['table-4-col-6', 'table-4-col-8'], // → order_count, avg_order_value
+              },
+              {
+                id: 'table-3-col-5',
+                name: 'total_spent',
+                dataType: 'DECIMAL(12,2)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Total amount spent',
+                relatedColumns: ['table-4-col-4', 'table-4-col-5', 'table-4-col-8'], // → lifetime_value, segment, avg
+              },
+              {
+                id: 'table-3-col-6',
+                name: 'first_order_date',
+                dataType: 'DATE',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Date of first order',
+                relatedColumns: ['table-4-col-7'], // → tenure_days
+              },
+              {
+                id: 'table-3-col-7',
+                name: 'last_order_date',
+                dataType: 'DATE',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Date of last order',
+              },
+              {
+                id: 'table-3-col-8',
+                name: 'country_code',
+                dataType: 'VARCHAR(2)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer country',
+                relatedColumns: ['table-4-col-9'], // → country_code
+              },
+            ],
+          },
+        },
+        {
+          id: 'table-4',
+          type: 'mart',
+          data: {
+            dp_name: 'Customer Analytics Mart',
+            dp_id: 'dp-mart-customer-analytics',
+            op_id: 'op-analytics-001',
+            op_name: 'Customer Analytics Processing',
+            schema: '/mart/customer_analytics',
+            owner: 'analytics-team@company.com',
+            tags: ['mart', 'customer-analytics', 'business-ready'],
+            columns: [
+              {
+                id: 'table-4-col-1',
+                name: 'customer_id',
+                dataType: 'INTEGER',
+                nullable: false,
+                isPrimaryKey: true,
+                isForeignKey: false,
+                description: 'Customer identifier',
+              },
+              {
+                id: 'table-4-col-2',
+                name: 'customer_name',
+                dataType: 'VARCHAR(255)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer full name',
+                tags: ['pii'],
+              },
+              {
+                id: 'table-4-col-3',
+                name: 'email',
+                dataType: 'VARCHAR(255)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer email',
+                tags: ['pii', 'contact'],
+              },
+              {
+                id: 'table-4-col-4',
+                name: 'lifetime_value',
+                dataType: 'DECIMAL(12,2)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer lifetime value',
+              },
+              {
+                id: 'table-4-col-5',
+                name: 'customer_segment',
+                dataType: 'VARCHAR(50)',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer segmentation category',
+              },
+              {
+                id: 'table-4-col-6',
+                name: 'order_count',
+                dataType: 'INTEGER',
+                nullable: false,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Total number of orders',
+              },
+              {
+                id: 'table-4-col-7',
+                name: 'tenure_days',
+                dataType: 'INTEGER',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer tenure in days',
+              },
+              {
+                id: 'table-4-col-8',
+                name: 'avg_order_value',
+                dataType: 'DECIMAL(10,2)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Average order value',
+              },
+              {
+                id: 'table-4-col-9',
+                name: 'country_code',
+                dataType: 'VARCHAR(2)',
+                nullable: true,
+                isPrimaryKey: false,
+                isForeignKey: false,
+                description: 'Customer country',
+              },
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  const response = await fetch('/api/table-column-lineage');
+  return response.json();
+}
+
 export const mockApi: MockApi = {
   delay,
   useMockApi,
   setUseMockApi,
   getFlowData,
   getColumnLineage,
+  getTableColumnLineage,
 };

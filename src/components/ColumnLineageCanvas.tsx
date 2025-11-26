@@ -7,134 +7,263 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  Handle,
+  Position,
   type Node as ReactFlowNode,
   type Edge as ReactFlowEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import ColumnPortNode from './ColumnPortNode';
 import { mockApi } from '../services/mockApi';
-import { findCompleteColumnLineage } from '../utils/columnLineageUtils';
 import { getLayoutedNodes } from '../utils/layoutUtils';
 import type {
-  ColumnPortNodeData,
   ColumnLineageData,
-  ColumnPort,
-  ColumnRelationship,
+  ColumnLineageTable,
+  ColumnLineageColumn,
 } from '../types';
 
+// Simple table node component (inline for now)
+interface TableNodeData extends Record<string, unknown> {
+  tableId: string;
+  tableName: string;
+  tableType?: string;
+  columns: ColumnLineageColumn[];
+  schema?: string;
+  owner?: string;
+  tags?: string[];
+  onColumnSelect?: (columnId: string | null) => void;
+  onVisibleColumnsChange?: (visibleColumnIds: string[]) => void;
+  selectedColumnId?: string | null;
+  lineageColumns?: Set<string>;
+}
+
+const TableNode = ({ data }: { data: TableNodeData }) => (
+  <div
+    style={{
+      background: 'white',
+      border: '2px solid #e5e7eb',
+      borderRadius: '8px',
+      padding: '12px',
+      minWidth: '280px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    }}
+  >
+    <div
+      style={{
+        fontWeight: 600,
+        marginBottom: '4px',
+        fontSize: '14px',
+        color: '#1f2937',
+      }}
+    >
+      {data.tableName}
+    </div>
+    {data.tableType && (
+      <div
+        style={{
+          fontSize: '11px',
+          color: '#6b7280',
+          marginBottom: '8px',
+          textTransform: 'uppercase',
+          fontWeight: 500,
+        }}
+      >
+        {data.tableType}
+      </div>
+    )}
+    {data.schema && (
+      <div
+        style={{
+          fontSize: '10px',
+          color: '#9ca3af',
+          marginBottom: '8px',
+          fontFamily: 'monospace',
+        }}
+      >
+        {data.schema}
+      </div>
+    )}
+    <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
+      {data.columns.map((col) => {
+        const isSelected = data.selectedColumnId === col.id;
+        const isInLineage = data.lineageColumns?.has(col.id);
+        const hasTags = col.tags && col.tags.length > 0;
+
+        return (
+          <div
+            key={col.id}
+            onClick={() => data.onColumnSelect?.(isSelected ? null : col.id)}
+            style={{
+              padding: '6px 8px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              borderRadius: '4px',
+              marginBottom: '3px',
+              background: isSelected
+                ? '#a78bfa'
+                : isInLineage
+                ? '#86efac'
+                : '#f9fafb',
+              color: isSelected || isInLineage ? 'white' : '#374151',
+              border: `1px solid ${
+                isSelected ? '#7c3aed' : isInLineage ? '#22c55e' : '#e5e7eb'
+              }`,
+              transition: 'all 0.15s ease',
+              position: 'relative',
+            }}
+            onMouseEnter={(e) => {
+              if (!isSelected && !isInLineage) {
+                e.currentTarget.style.background = '#f3f4f6';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isSelected && !isInLineage) {
+                e.currentTarget.style.background = '#f9fafb';
+              }
+            }}
+          >
+            {/* Target handle for incoming connections (left side) */}
+            <Handle
+              type="target"
+              position={Position.Left}
+              id={col.id}
+              style={{
+                width: '8px',
+                height: '8px',
+                background: '#6b7280',
+                border: '2px solid white',
+                left: '-4px',
+              }}
+            />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontWeight: 500 }}>{col.name}</span>
+                {col.isPrimaryKey && (
+                  <span style={{ fontSize: '10px', opacity: 0.8 }}>🔑</span>
+                )}
+                {col.isForeignKey && (
+                  <span style={{ fontSize: '10px', opacity: 0.8 }}>🔗</span>
+                )}
+              </div>
+              <span
+                style={{
+                  opacity: 0.7,
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {col.dataType}
+              </span>
+            </div>
+            {hasTags && (
+              <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+                {col.tags?.map((tag) => (
+                  <span
+                    key={tag}
+                    style={{
+                      marginRight: '4px',
+                      padding: '1px 4px',
+                      background: isSelected || isInLineage ? 'rgba(255,255,255,0.2)' : '#e5e7eb',
+                      borderRadius: '2px',
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Source handle for outgoing connections (right side) */}
+            {col.relatedColumns && col.relatedColumns.length > 0 && (
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={col.id}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  background: '#6b7280',
+                  border: '2px solid white',
+                  right: '-4px',
+                }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+    {data.owner && (
+      <div
+        style={{
+          fontSize: '10px',
+          color: '#9ca3af',
+          marginTop: '8px',
+          paddingTop: '8px',
+          borderTop: '1px solid #e5e7eb',
+        }}
+      >
+        👤 {data.owner}
+      </div>
+    )}
+  </div>
+);
+
 const nodeTypes = {
-  columnport: ColumnPortNode,
+  table: TableNode,
 };
 
 interface ColumnLineageCanvasProps {
-  initialPortId: string;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
-interface ColumnLineageResult {
-  columns: Set<string>;
-  edges: Set<string>;
-  ports: Set<string>;
-}
-
-function ColumnLineageCanvas({ initialPortId, onBack }: ColumnLineageCanvasProps) {
+function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
   const { fitView } = useReactFlow();
-  const [nodes, setNodes, onNodesChange] = useNodesState<ColumnPortNodeData>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<ReactFlowNode<TableNodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<ReactFlowEdge>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
-  const [lineage, setLineage] = useState<ColumnLineageResult>({
-    columns: new Set(),
-    edges: new Set(),
-    ports: new Set(),
-  });
-  const [columnData, setColumnData] = useState<ColumnLineageData | null>(null); // Store all column data
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, string[]>>({}); // Track visible columns per node
+  const [lineageColumns, setLineageColumns] = useState<Set<string>>(new Set());
+  const [tableData, setTableData] = useState<ColumnLineageData | null>(null);
 
-  // Load column lineage data from API
+  // Load table column lineage data from API
   useEffect(() => {
-    const loadColumnLineage = async () => {
+    const loadTableColumnLineage = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await mockApi.getColumnLineage(initialPortId);
+        const data = await mockApi.getTableColumnLineage();
+        console.log('Table column lineage data:', data);
+        setTableData(data);
 
-        setColumnData(data);
-
-        // Build nodes for 3-layer graph: Upstream → Selected → Downstream
-        const newNodes: ReactFlowNode<ColumnPortNodeData>[] = [];
-
-        // Upstream ports (left column)
-        (data.upstreamPorts || []).forEach((port) => {
-          newNodes.push({
-            id: port.portId,
-            type: 'columnport',
-            position: { x: 0, y: 0 }, // Will be calculated by Dagre
-            data: {
-              portId: port.portId,
-              portLabel: port.portLabel,
-              nodeId: port.nodeId,
-              nodeLabel: port.nodeLabel,
-              columns: port.columns,
-              portType: 'output',
-            },
-          });
-        });
-
-        // Selected port (center)
-        newNodes.push({
-          id: data.selectedPort.portId,
-          type: 'columnport',
-          position: { x: 0, y: 0 }, // Will be calculated by Dagre
+        // Build nodes from tables
+        const newNodes: ReactFlowNode<TableNodeData>[] = data.tables.map((table) => ({
+          id: table.id,
+          type: 'table',
+          position: { x: 0, y: 0 }, // Will be calculated by layout
           data: {
-            portId: data.selectedPort.portId,
-            portLabel: data.selectedPort.portLabel,
-            nodeId: data.selectedPort.nodeId,
-            nodeLabel: data.selectedPort.nodeLabel,
-            columns: data.selectedPort.columns,
-            portType: data.selectedPort.portId.includes('input') ? 'input' : 'output',
-            selected: true,
+            tableId: table.id,
+            tableName: table.data.dp_name,
+            tableType: table.type,
+            columns: table.data.columns,
+            schema: table.data.schema,
+            owner: table.data.owner,
+            tags: table.data.tags,
           },
-        });
+        }));
 
-        // Downstream ports (right column)
-        (data.downstreamPorts || []).forEach((port) => {
-          newNodes.push({
-            id: port.portId,
-            type: 'columnport',
-            position: { x: 0, y: 0 }, // Will be calculated by Dagre
-            data: {
-              portId: port.portId,
-              portLabel: port.portLabel,
-              nodeId: port.nodeId,
-              nodeLabel: port.nodeLabel,
-              columns: port.columns,
-              portType: 'input',
-            },
-          });
-        });
+        // Build edges from relatedColumns
+        const newEdges = buildEdgesFromRelatedColumns(data.tables);
 
-        // Build edges for layout calculation
-        // Create simple edges from column relationships
-        const layoutEdges: ReactFlowEdge[] = [];
-        data.columnRelationships.forEach((rel, index) => {
-          const sourcePortId = getPortIdForColumnInData(rel.sourceColumn, data);
-          const targetPortId = getPortIdForColumnInData(rel.targetColumn, data);
-
-          if (sourcePortId && targetPortId) {
-            layoutEdges.push({
-              id: `layout-edge-${index}`,
-              source: sourcePortId,
-              target: targetPortId,
-            });
-          }
-        });
-
-        // Apply Dagre layout
-        const layoutedNodes = await getLayoutedNodes(newNodes, layoutEdges, {});
-        setNodes(layoutedNodes);
+        // Apply layout
+        const layoutedNodes = await getLayoutedNodes(newNodes as any, newEdges, {});
+        setNodes(layoutedNodes as any);
+        setEdges(newEdges);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         setError(errorMessage);
@@ -143,13 +272,128 @@ function ColumnLineageCanvas({ initialPortId, onBack }: ColumnLineageCanvasProps
       }
     };
 
-    loadColumnLineage();
-  }, [initialPortId, setNodes]);
+    loadTableColumnLineage();
+  }, [setNodes, setEdges]);
+
+  // Helper function to find table ID for a column ID
+  const getTableIdForColumn = useCallback(
+    (columnId: string): string | null => {
+      if (!tableData) return null;
+
+      for (const table of tableData.tables) {
+        if (table.data.columns.some((col) => col.id === columnId)) {
+          return table.id;
+        }
+      }
+      return null;
+    },
+    [tableData]
+  );
+
+  // Build edges from relatedColumns in tables
+  const buildEdgesFromRelatedColumns = useCallback((tables: ColumnLineageTable[]): ReactFlowEdge[] => {
+    const edges: ReactFlowEdge[] = [];
+
+    tables.forEach((sourceTable) => {
+      sourceTable.data.columns.forEach((sourceCol) => {
+        sourceCol.relatedColumns?.forEach((targetColId) => {
+          // Find target table
+          const targetTable = tables.find((t) =>
+            t.data.columns.some((col) => col.id === targetColId)
+          );
+
+          if (targetTable) {
+            edges.push({
+              id: `${sourceCol.id}-${targetColId}`,
+              source: sourceTable.id,
+              sourceHandle: sourceCol.id,
+              target: targetTable.id,
+              targetHandle: targetColId,
+              type: 'default',
+              style: { strokeWidth: 2, stroke: '#9ca3af' },
+            });
+          }
+        });
+      });
+    });
+
+    return edges;
+  }, []);
+
+  // Find complete lineage for a column (upstream + downstream)
+  const findColumnLineage = useCallback(
+    (columnId: string): Set<string> => {
+      if (!tableData) return new Set();
+
+      const lineage = new Set<string>();
+      const visited = new Set<string>();
+
+      const traverse = (colId: string) => {
+        if (visited.has(colId)) return;
+        visited.add(colId);
+        lineage.add(colId);
+
+        // Find downstream (via relatedColumns)
+        tableData.tables.forEach((table) => {
+          table.data.columns.forEach((col) => {
+            if (col.id === colId && col.relatedColumns) {
+              col.relatedColumns.forEach(traverse);
+            }
+          });
+        });
+
+        // Find upstream (columns that have this column in their relatedColumns)
+        tableData.tables.forEach((table) => {
+          table.data.columns.forEach((col) => {
+            if (col.relatedColumns?.includes(colId)) {
+              traverse(col.id);
+            }
+          });
+        });
+      };
+
+      traverse(columnId);
+      return lineage;
+    },
+    [tableData]
+  );
+
+  // Rebuild edges with lineage highlighting
+  const rebuildEdges = useCallback(() => {
+    if (!tableData) return;
+
+    const builtEdges = buildEdgesFromRelatedColumns(tableData.tables);
+    const hasLineage = lineageColumns.size > 0;
+
+    const styledEdges = builtEdges.map((edge) => {
+      // Check if this edge is in the lineage
+      const sourceColId = edge.sourceHandle as string;
+      const targetColId = edge.targetHandle as string;
+      const isInLineage =
+        lineageColumns.has(sourceColId) && lineageColumns.has(targetColId);
+
+      return {
+        ...edge,
+        style: {
+          strokeWidth: isInLineage ? 3 : 2,
+          stroke: isInLineage ? '#3b82f6' : '#9ca3af',
+          opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
+        },
+        animated: isInLineage,
+      };
+    });
+
+    setEdges(styledEdges);
+  }, [tableData, lineageColumns, buildEdgesFromRelatedColumns, setEdges]);
+
+  // Update edges when lineage changes
+  useEffect(() => {
+    rebuildEdges();
+  }, [rebuildEdges]);
 
   // Fit view after nodes are loaded
   useEffect(() => {
     if (!loading && nodes.length > 0) {
-      // Small delay to ensure nodes are rendered
       const timeoutId = setTimeout(() => {
         fitView({ padding: 0.2, duration: 800 });
       }, 100);
@@ -157,215 +401,49 @@ function ColumnLineageCanvas({ initialPortId, onBack }: ColumnLineageCanvasProps
     }
   }, [loading, nodes.length, fitView]);
 
-  // Helper function to find port ID for a column ID during initial load
-  const getPortIdForColumnInData = (columnId: string, data: ColumnLineageData): string | null => {
-    const allPorts: ColumnPort[] = [
-      data.selectedPort,
-      ...(data.upstreamPorts || []),
-      ...(data.downstreamPorts || []),
-    ];
-
-    for (const port of allPorts) {
-      if (port.columns.some((col) => col.id === columnId)) {
-        return port.portId;
-      }
-    }
-    return null;
-  };
-
-  // Build edges from column relationships - following FlowCanvas pattern
-  const buildEdgesFromRelationships = useCallback(() => {
-    if (!columnData) return [];
-
-    const builtEdges: ReactFlowEdge[] = [];
-
-    columnData.columnRelationships.forEach((rel: ColumnRelationship, index: number) => {
-      // Find which nodes these columns belong to
-      const sourceNodeId = getPortIdForColumn(rel.sourceColumn, columnData);
-      const targetNodeId = getPortIdForColumn(rel.targetColumn, columnData);
-
-      if (!sourceNodeId || !targetNodeId) return;
-
-      // Check if both columns are visible in their respective nodes
-      const sourceVisibleCols = visibleColumns[sourceNodeId];
-      const targetVisibleCols = visibleColumns[targetNodeId];
-
-      // Only create edge if both columns are visible
-      // If a node hasn't reported visible columns yet (undefined), assume visible (initial load)
-      const sourceVisible = sourceVisibleCols === undefined || sourceVisibleCols.includes(rel.sourceColumn);
-      const targetVisible = targetVisibleCols === undefined || targetVisibleCols.includes(rel.targetColumn);
-
-      if (sourceVisible && targetVisible) {
-        builtEdges.push({
-          id: `col-edge-${index}`,
-          source: sourceNodeId,
-          sourceHandle: rel.sourceColumn,
-          target: targetNodeId,
-          targetHandle: rel.targetColumn,
-          type: 'default',
-          style: { strokeWidth: 2, stroke: '#9ca3af' },
-        });
-      }
-    });
-
-    return builtEdges;
-  }, [columnData, visibleColumns]);
-
-  // Helper function to find port ID for a column ID
-  const getPortIdForColumn = (columnId: string, data: ColumnLineageData): string | null => {
-    const allPorts: ColumnPort[] = [
-      data.selectedPort,
-      ...(data.upstreamPorts || []),
-      ...(data.downstreamPorts || []),
-    ];
-
-    for (const port of allPorts) {
-      if (port.columns.some((col) => col.id === columnId)) {
-        return port.portId;
-      }
-    }
-    return null;
-  };
-
-  // Update edges whenever visible columns change
-  // Use debounce to ensure all handles are registered before building edges
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const newEdges = buildEdgesFromRelationships();
-      setEdges(newEdges);
-    }, 1);
-
-    return () => clearTimeout(timeoutId);
-  }, [buildEdgesFromRelationships, setEdges]);
-
   // Handle column selection
   const handleColumnSelect = useCallback(
     (columnId: string | null) => {
       setSelectedColumn((prev) => {
         const newSelection = prev === columnId ? null : columnId;
 
-        // Calculate lineage for the selected column
-        if (newSelection && columnData) {
-          const allPorts = {
-            selectedPort: columnData.selectedPort,
-            upstreamPorts: columnData.upstreamPorts,
-            downstreamPorts: columnData.downstreamPorts,
-          };
-          const lineageData = findCompleteColumnLineage(newSelection, columnData.columnRelationships, allPorts);
-          setLineage(lineageData);
+        if (newSelection) {
+          const lineage = findColumnLineage(newSelection);
+          setLineageColumns(lineage);
         } else {
-          // Clear lineage when deselecting
-          setLineage({ columns: new Set(), edges: new Set(), ports: new Set() });
+          setLineageColumns(new Set());
         }
 
         return newSelection;
       });
     },
-    [columnData]
-  );
-
-  // Handle visible columns change (for pagination)
-  const handleVisibleColumnsChange = useCallback((nodeId: string, visibleColumnIds: string[]) => {
-    setVisibleColumns((prev) => {
-      // Only update if the visible columns have actually changed
-      const prevColumns = prev[nodeId];
-      const columnsChanged =
-        !prevColumns ||
-        visibleColumnIds.length !== prevColumns.length ||
-        visibleColumnIds.some((id, i) => id !== prevColumns[i]);
-
-      if (!columnsChanged) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        [nodeId]: visibleColumnIds,
-      };
-    });
-  }, []);
-
-  // Suppress handle-related errors during pagination transitions
-  const onError = useCallback((code: string, message: string) => {
-    // Suppress error #008 (handle not found) during pagination
-    // This can happen temporarily while React Flow processes handle updates
-    if (code === '008') {
-      console.debug('Handle temporarily unavailable during pagination:', message);
-      return;
-    }
-    // Log other errors normally
-    console.error(`React Flow Error ${code}:`, message);
-  }, []);
-
-  // Handle switching to different port's column lineage
-  const handleViewColumnLineage = useCallback(
-    (portId: string) => {
-      if (portId !== initialPortId) {
-        // Reload with new port ID
-        window.location.hash = `#column-lineage/${portId}`;
-        window.location.reload(); // Simple reload for now
-      }
-    },
-    [initialPortId]
+    [findColumnLineage]
   );
 
   // Add callbacks to nodes
-  const nodesWithCallback = nodes.map((node) => {
-    const inLineage = lineage.ports.has(node.id);
-    return {
-      ...node,
-      data: {
-        ...node.data,
-        onColumnSelect: handleColumnSelect,
-        onVisibleColumnsChange: (visibleColumnIds: string[]) =>
-          handleVisibleColumnsChange(node.id, visibleColumnIds),
-        onViewColumnLineage: handleViewColumnLineage,
-        selectedColumnId: selectedColumn,
-        lineageColumns: lineage.columns,
-        inLineage,
-      },
-    };
-  });
-
-  // Style edges based on lineage and sort so lineage edges render on top
-  const styledEdges = edges
-    .map((edge) => {
-      const isInLineage = lineage.edges.has(edge.id);
-      const hasLineage = lineage.edges.size > 0;
-
-      return {
-        ...edge,
-        style: {
-          ...edge.style,
-          stroke: isInLineage ? '#3b82f6' : '#9ca3af',
-          strokeWidth: isInLineage ? 3 : 2,
-          opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
-        },
-        animated: false,
-        // Add a temporary property for sorting (React Flow will ignore unknown properties)
-        zIndex: isInLineage ? 1 : 0,
-      };
-    })
-    .sort((a, b) => {
-      // Sort so lineage edges render last (on top)
-      const aLineage = lineage.edges.has(a.id);
-      const bLineage = lineage.edges.has(b.id);
-      if (aLineage && !bLineage) return 1;
-      if (!aLineage && bLineage) return -1;
-      return 0;
-    });
+  const nodesWithCallback = nodes.map((node) => ({
+    ...node,
+    data: {
+      ...node.data,
+      onColumnSelect: handleColumnSelect,
+      selectedColumnId: selectedColumn,
+      lineageColumns,
+    },
+  }));
 
   if (loading) {
     return (
       <div className="column-lineage-container">
-        <div className="column-lineage-header">
-          <button className="back-button" onClick={onBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Back
-          </button>
-        </div>
+        {onBack && (
+          <div className="column-lineage-header">
+            <button className="back-button" onClick={onBack}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Back
+            </button>
+          </div>
+        )}
         <div className="loading-container">
           <div className="loading-content">
             <div className="loading-text">Loading column lineage...</div>
@@ -379,14 +457,16 @@ function ColumnLineageCanvas({ initialPortId, onBack }: ColumnLineageCanvasProps
   if (error) {
     return (
       <div className="column-lineage-container">
-        <div className="column-lineage-header">
-          <button className="back-button" onClick={onBack}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Back
-          </button>
-        </div>
+        {onBack && (
+          <div className="column-lineage-header">
+            <button className="back-button" onClick={onBack}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Back
+            </button>
+          </div>
+        )}
         <div className="error-container">
           <div className="error-content">
             <div className="error-title">Error loading column lineage</div>
@@ -400,27 +480,35 @@ function ColumnLineageCanvas({ initialPortId, onBack }: ColumnLineageCanvasProps
   return (
     <div className="column-lineage-container">
       <div className="column-lineage-header">
-        <button className="back-button" onClick={onBack}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Back
-        </button>
+        {onBack && (
+          <button className="back-button" onClick={onBack}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10 13L5 8l5-5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Back
+          </button>
+        )}
         <h2 className="column-lineage-title">Column Lineage</h2>
+        {selectedColumn && tableData && (
+          <div style={{ fontSize: '14px', color: '#6b7280', marginLeft: 'auto' }}>
+            Selected: {getColumnName(selectedColumn, tableData.tables)} ({lineageColumns.size}{' '}
+            columns in lineage)
+          </div>
+        )}
       </div>
       <div className="column-lineage-canvas">
         <ReactFlow
           nodes={nodesWithCallback}
-          edges={styledEdges}
+          edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onError={onError}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={{
             type: 'default',
             animated: false,
             style: { strokeWidth: 2 },
           }}
+          fitView
         >
           <Controls />
           <MiniMap />
@@ -429,6 +517,17 @@ function ColumnLineageCanvas({ initialPortId, onBack }: ColumnLineageCanvasProps
       </div>
     </div>
   );
+}
+
+// Helper to get column name for display
+function getColumnName(columnId: string, tables: ColumnLineageTable[]): string {
+  for (const table of tables) {
+    const column = table.data.columns.find((col) => col.id === columnId);
+    if (column) {
+      return `${table.data.dp_name}.${column.name}`;
+    }
+  }
+  return columnId;
 }
 
 export default ColumnLineageCanvas;

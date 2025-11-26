@@ -193,6 +193,42 @@ export type VisiblePortsState = Record<string, VisiblePorts>;
 export type ViewMode = 'port' | 'column';
 
 /**
+ * Column lineage structure with embedded relationships
+ */
+export interface ColumnLineageColumn {
+  id: string;
+  name: string;
+  dataType: string;
+  nullable: boolean;
+  isPrimaryKey: boolean;
+  isForeignKey: boolean;
+  description?: string;
+  tags?: string[];
+  relatedColumns?: string[]; // IDs of related columns in other tables
+}
+
+export interface ColumnLineageTableData {
+  dp_name: string;
+  dp_id: string;
+  op_id?: string;
+  op_name?: string;
+  schema?: string; // URL
+  owner?: string;
+  tags?: string[];
+  columns: ColumnLineageColumn[];
+}
+
+export interface ColumnLineageTable {
+  id: string;
+  type?: 'source' | 'transformation' | 'mart';
+  data: ColumnLineageTableData;
+}
+
+export interface ColumnLineageData {
+  tables: ColumnLineageTable[];
+}
+
+/**
  * Mock API interface
  */
 export interface MockApi {
@@ -201,4 +237,5 @@ export interface MockApi {
   setUseMockApi: (flag: boolean) => void;
   getFlowData: () => Promise<FlowData>;
   getColumnLineage: (portId: string) => Promise<ColumnLineageData>;
+  getTableColumnLineage: () => Promise<ColumnLineageData>;
 }
