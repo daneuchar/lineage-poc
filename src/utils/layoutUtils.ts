@@ -81,6 +81,9 @@ const getNodeWidth = (
   if (node.type === 'columnport') {
     return 350; // Fixed width for column port nodes (between min 320px and max 420px)
   }
+  if (node.type === 'table') {
+    return 320; // Fixed width for table nodes (matches minWidth: 280px + padding)
+  }
   return 150; // Default width
 };
 
@@ -128,6 +131,22 @@ const getNodeHeight = (
     // header (60) + section padding (20) + column items (49px each) + pagination (32 if needed)
     const paginationHeight = needsPagination ? 32 : 0;
     return 80 + visibleColumns * 49 + paginationHeight;
+  }
+  if (node.type === 'table') {
+    // Calculate height based on number of columns in the table node
+    const tableData = node.data as any; // TableNodeData from ColumnLineageCanvas
+    const columnCount = tableData.columns?.length || 0;
+
+    // Header section: title (20px) + tableType (19px) + schema (18px) + spacing (24px) = ~61px
+    // Border and divider: 9px
+    // Each column item: ~35px (padding 6px*2 + font 12px + border + margin)
+    // Owner footer: 34px (if present)
+
+    const headerHeight = 70; // header + borders
+    const columnItemHeight = 35;
+    const ownerHeight = tableData.owner ? 34 : 0;
+
+    return headerHeight + (columnCount * columnItemHeight) + ownerHeight;
   }
   return 100; // Default height
 };

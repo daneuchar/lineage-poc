@@ -241,8 +241,8 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         console.log('Table column lineage data:', data);
         setTableData(data);
 
-        // Build nodes from tables
-        const newNodes: ReactFlowNode<TableNodeData>[] = data.tables.map((table) => ({
+        // Build nodes from datasets
+        const newNodes: ReactFlowNode<TableNodeData>[] = data.datasets.map((table) => ({
           id: table.id,
           type: 'table',
           position: { x: 0, y: 0 }, // Will be calculated by layout
@@ -258,10 +258,13 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         }));
 
         // Build edges from relatedColumns
-        const newEdges = buildEdgesFromRelatedColumns(data.tables);
+        const newEdges = buildEdgesFromRelatedColumns(data.datasets);
 
-        // Apply layout
-        const layoutedNodes = await getLayoutedNodes(newNodes as any, newEdges, {});
+        // Build layout-only edges (without handles) for Dagre algorithm
+        const layoutEdges = buildLayoutEdges(data.datasets);
+
+        // Apply layout using layout-only edges
+        const layoutedNodes = await getLayoutedNodes(newNodes as any, layoutEdges, {});
         setNodes(layoutedNodes as any);
         setEdges(newEdges);
       } catch (err) {
@@ -280,7 +283,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
     (columnId: string): string | null => {
       if (!tableData) return null;
 
-      for (const table of tableData.tables) {
+      for (const table of tableData.datasets) {
         if (table.data.columns.some((col) => col.id === columnId)) {
           return table.id;
         }
@@ -289,6 +292,39 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
     },
     [tableData]
   );
+
+  // Build layout-only edges (table to table, without handles) for Dagre layout algorithm
+  const buildLayoutEdges = useCallback((tables: ColumnLineageTable[]): ReactFlowEdge[] => {
+    const tableConnections = new Set<string>();
+    const edges: ReactFlowEdge[] = [];
+
+    tables.forEach((sourceTable) => {
+      sourceTable.data.columns.forEach((sourceCol) => {
+        sourceCol.relatedColumns?.forEach((targetColId) => {
+          // Find target table
+          const targetTable = tables.find((t) =>
+            t.data.columns.some((col) => col.id === targetColId)
+          );
+
+          if (targetTable) {
+            const connectionKey = `${sourceTable.id}-${targetTable.id}`;
+            // Only add one edge per table pair for layout
+            if (!tableConnections.has(connectionKey)) {
+              tableConnections.add(connectionKey);
+              edges.push({
+                id: connectionKey,
+                source: sourceTable.id,
+                target: targetTable.id,
+                type: 'default',
+              });
+            }
+          }
+        });
+      });
+    });
+
+    return edges;
+  }, []);
 
   // Build edges from relatedColumns in tables
   const buildEdgesFromRelatedColumns = useCallback((tables: ColumnLineageTable[]): ReactFlowEdge[] => {
@@ -334,7 +370,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         lineage.add(colId);
 
         // Find downstream (via relatedColumns)
-        tableData.tables.forEach((table) => {
+        tableData.datasets.forEach((table) => {
           table.data.columns.forEach((col) => {
             if (col.id === colId && col.relatedColumns) {
               col.relatedColumns.forEach(traverse);
@@ -343,7 +379,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         });
 
         // Find upstream (columns that have this column in their relatedColumns)
-        tableData.tables.forEach((table) => {
+        tableData.datasets.forEach((table) => {
           table.data.columns.forEach((col) => {
             if (col.relatedColumns?.includes(colId)) {
               traverse(col.id);
@@ -362,7 +398,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
   const rebuildEdges = useCallback(() => {
     if (!tableData) return;
 
-    const builtEdges = buildEdgesFromRelatedColumns(tableData.tables);
+    const builtEdges = buildEdgesFromRelatedColumns(tableData.datasets);
     const hasLineage = lineageColumns.size > 0;
 
     const styledEdges = builtEdges.map((edge) => {
@@ -379,7 +415,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
           stroke: isInLineage ? '#3b82f6' : '#9ca3af',
           opacity: !hasLineage ? 1 : isInLineage ? 1 : 0.2,
         },
-        animated: isInLineage,
+        animated: false,
       };
     });
 
@@ -491,7 +527,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         <h2 className="column-lineage-title">Column Lineage</h2>
         {selectedColumn && tableData && (
           <div style={{ fontSize: '14px', color: '#6b7280', marginLeft: 'auto' }}>
-            Selected: {getColumnName(selectedColumn, tableData.tables)} ({lineageColumns.size}{' '}
+            Selected: {getColumnName(selectedColumn, tableData.datasets)} ({lineageColumns.size}{' '}
             columns in lineage)
           </div>
         )}

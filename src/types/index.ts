@@ -225,7 +225,7 @@ export interface ColumnLineageTable {
 }
 
 export interface ColumnLineageData {
-  tables: ColumnLineageTable[];
+  datasets: ColumnLineageTable[];
 }
 
 /**

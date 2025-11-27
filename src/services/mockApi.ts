@@ -421,7 +421,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
     await delay(800); // Simulate network delay
 
     return {
-      tables: [
+      datasets: [
         {
           id: 'table-1',
           type: 'source',
