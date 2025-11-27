@@ -1,16 +1,16 @@
 import dagre from 'dagre';
 import type { Node as ReactFlowNode, Edge as ReactFlowEdge } from '@xyflow/react';
-import type { DataProductNodeData, ExpandedNodesState, ColumnPortNodeData } from '../types';
+import type { DataProductNodeData, ExpandedNodesState } from '../types';
 
 /**
  * Calculate automatic layout using Dagre for hierarchical flow
  */
 export const getLayoutedNodes = async (
-  nodes: ReactFlowNode<DataProductNodeData | ColumnPortNodeData>[],
+  nodes: ReactFlowNode<DataProductNodeData>[],
   edges: ReactFlowEdge[],
   expandedNodes: ExpandedNodesState = {},
   _showAllStates: Record<string, boolean> = {}
-): Promise<ReactFlowNode<DataProductNodeData | ColumnPortNodeData>[]> => {
+): Promise<ReactFlowNode<DataProductNodeData>[]> => {
   // For debugging
   console.log('Layout: Expanded nodes:', expandedNodes);
 
@@ -71,15 +71,12 @@ export const getLayoutedNodes = async (
  * Get dynamic width for different node types
  */
 const getNodeWidth = (
-  node: ReactFlowNode<DataProductNodeData | ColumnPortNodeData>,
+  node: ReactFlowNode<DataProductNodeData>,
   expandedNodes: ExpandedNodesState
 ): number => {
   if (node.type === 'dataproduct') {
     const isExpanded = expandedNodes[node.id];
     return isExpanded ? 420 : 120;
-  }
-  if (node.type === 'columnport') {
-    return 350; // Fixed width for column port nodes (between min 320px and max 420px)
   }
   if (node.type === 'table') {
     return 320; // Fixed width for table nodes (matches minWidth: 280px + padding)
@@ -91,7 +88,7 @@ const getNodeWidth = (
  * Get dynamic height for different node types based on content
  */
 const getNodeHeight = (
-  node: ReactFlowNode<DataProductNodeData | ColumnPortNodeData>,
+  node: ReactFlowNode<DataProductNodeData>,
   expandedNodes: ExpandedNodesState
 ): number => {
   if (node.type === 'dataproduct') {
@@ -117,20 +114,6 @@ const getNodeHeight = (
     // header (50) + port header (30) + items (28 each) + pagination (36 if needed) + padding (20)
     const paginationHeight = needsPagination ? 36 : 0;
     return 100 + maxVisiblePorts * 28 + paginationHeight;
-  }
-  if (node.type === 'columnport') {
-    const data = node.data as ColumnPortNodeData;
-    // Calculate height based on number of columns with pagination
-    const columnCount = data.port?.columns?.length || 0;
-    const ITEMS_PER_PAGE = 5;
-
-    // Show max 5 items per page
-    const visibleColumns = Math.min(columnCount, ITEMS_PER_PAGE);
-    const needsPagination = columnCount > ITEMS_PER_PAGE;
-
-    // header (60) + section padding (20) + column items (49px each) + pagination (32 if needed)
-    const paginationHeight = needsPagination ? 32 : 0;
-    return 80 + visibleColumns * 49 + paginationHeight;
   }
   if (node.type === 'table') {
     // Calculate height based on number of columns in the table node

@@ -37,52 +37,6 @@ export interface DataProductNodeData extends Record<string, unknown> {
 }
 
 /**
- * Column interface for column lineage
- */
-export interface Column {
-  id: string;
-  name: string;
-  dataType: string;
-  nullable: boolean;
-  isPrimaryKey: boolean;
-  description: string;
-  upstreamColumns?: string[];
-  downstreamColumns?: string[];
-}
-
-/**
- * Port with columns for column lineage
- */
-export interface ColumnPort {
-  portId: string;
-  portLabel: string;
-  nodeId: string;
-  nodeLabel: string;
-  columns: Column[];
-}
-
-/**
- * Column Port Node Data interface
- */
-export interface ColumnPortNodeData extends Record<string, unknown> {
-  portId: string;
-  portLabel: string;
-  nodeId: string;
-  nodeLabel: string;
-  columns: Column[];
-  portType: 'input' | 'output';
-  // Callbacks
-  onColumnSelect?: (columnId: string | null) => void;
-  onVisibleColumnsChange?: (visibleColumnIds: string[]) => void;
-  onViewColumnLineage?: (portId: string) => void;
-  // State
-  selected?: boolean;
-  inLineage?: boolean;
-  selectedColumnId?: string | null;
-  lineageColumns?: Set<string>;
-}
-
-/**
  * Relationship types
  */
 export type RelationshipType = 'direct' | 'port';
@@ -117,29 +71,11 @@ export interface PortRelationship {
 export type Relationship = DirectRelationship | PortRelationship;
 
 /**
- * Column-to-column relationship
- */
-export interface ColumnRelationship {
-  sourceColumn: string;
-  targetColumn: string;
-}
-
-/**
  * Flow data from API
  */
 export interface FlowData {
   nodes: ReactFlowNode<DataProductNodeData>[];
   relationships: Relationship[];
-}
-
-/**
- * Column lineage data from API
- */
-export interface ColumnLineageData {
-  selectedPort: ColumnPort;
-  upstreamPorts: ColumnPort[];
-  downstreamPorts: ColumnPort[];
-  columnRelationships: ColumnRelationship[];
 }
 
 /**
@@ -232,10 +168,6 @@ export interface ColumnLineageData {
  * Mock API interface
  */
 export interface MockApi {
-  delay: (ms?: number) => Promise<void>;
-  useMockApi: boolean;
-  setUseMockApi: (flag: boolean) => void;
   getFlowData: () => Promise<FlowData>;
-  getColumnLineage: (portId: string) => Promise<ColumnLineageData>;
   getTableColumnLineage: () => Promise<ColumnLineageData>;
 }
