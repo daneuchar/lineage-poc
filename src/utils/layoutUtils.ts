@@ -20,7 +20,7 @@ export const getLayoutedNodes = async (
   // Configure the graph layout
   dagreGraph.setGraph({
     rankdir: 'LR', // Left to Right
-    nodesep: 80, // Vertical spacing between nodes
+    nodesep: 150, // Vertical spacing between nodes (increased for more gap)
     ranksep: 150, // Horizontal spacing between layers
     edgesep: 50, // Edge spacing
     marginx: 50,

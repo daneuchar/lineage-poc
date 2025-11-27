@@ -15,6 +15,7 @@
 /* Component Styles */
 @import "./dataproduct-node.css";
 @import "./ports.css";
+@import "./dataset-node.css";
 
 /* React Flow Library Overrides */
 @import "./react-flow.css";

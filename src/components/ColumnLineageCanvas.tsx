@@ -27,6 +27,7 @@ interface DatasetNodeData extends Record<string, unknown> {
   datasetId: string;
   datasetName: string;
   datasetType?: string;
+  portType?: 'input' | 'output';
   columns: ColumnLineageColumn[];
   schema?: string;
   tags?: string[];
@@ -37,52 +38,22 @@ interface DatasetNodeData extends Record<string, unknown> {
 }
 
 const DatasetNode = ({ data }: { data: DatasetNodeData }) => (
-  <div
-    style={{
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      padding: '12px',
-      minWidth: '280px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    }}
-  >
-    <div
-      style={{
-        fontWeight: 600,
-        marginBottom: '4px',
-        fontSize: '14px',
-        color: '#1f2937',
-      }}
-    >
-      {data.datasetName}
+  <div className="dataset-node">
+    {/* Flap/folder tag showing port type */}
+    <div className={`dataset-tag ${data.portType || 'input'}`}>
+      {data.portType === 'output' ? 'OUTPUT' : 'INPUT'}
     </div>
-    {data.datasetType && (
-      <div
-        style={{
-          fontSize: '11px',
-          color: '#6b7280',
-          marginBottom: '8px',
-          textTransform: 'uppercase',
-          fontWeight: 500,
-        }}
-      >
-        {data.datasetType}
-      </div>
-    )}
-    {data.schema && (
-      <div
-        style={{
-          fontSize: '10px',
-          color: '#9ca3af',
-          marginBottom: '8px',
-          fontFamily: 'monospace',
-        }}
-      >
-        {data.schema}
-      </div>
-    )}
-    <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '8px' }}>
+
+    <div className="dataset-header">
+      <div className="dataset-title">{data.datasetName}</div>
+      {data.datasetType && (
+        <div className="dataset-type">{data.datasetType}</div>
+      )}
+      {data.schema && (
+        <div className="dataset-schema">{data.schema}</div>
+      )}
+    </div>
+    <div className="dataset-columns">
       {data.columns.map((col) => {
         const isSelected = data.selectedColumnId === col.id;
         const isInLineage = data.lineageColumns?.has(col.id);
@@ -92,34 +63,7 @@ const DatasetNode = ({ data }: { data: DatasetNodeData }) => (
           <div
             key={col.id}
             onClick={() => data.onColumnSelect?.(isSelected ? null : col.id)}
-            style={{
-              padding: '6px 8px',
-              fontSize: '12px',
-              cursor: 'pointer',
-              borderRadius: '4px',
-              marginBottom: '3px',
-              background: isSelected
-                ? '#a78bfa'
-                : isInLineage
-                ? '#86efac'
-                : '#f9fafb',
-              color: isSelected || isInLineage ? 'white' : '#374151',
-              border: `1px solid ${
-                isSelected ? '#7c3aed' : isInLineage ? '#22c55e' : '#e5e7eb'
-              }`,
-              transition: 'all 0.15s ease',
-              position: 'relative',
-            }}
-            onMouseEnter={(e) => {
-              if (!isSelected && !isInLineage) {
-                e.currentTarget.style.background = '#f3f4f6';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isSelected && !isInLineage) {
-                e.currentTarget.style.background = '#f9fafb';
-              }
-            }}
+            className={`column-item ${isSelected ? 'selected' : ''} ${isInLineage ? 'in-lineage' : ''}`}
           >
             {/* Target handle for incoming connections (left side) */}
             <Handle
@@ -134,44 +78,20 @@ const DatasetNode = ({ data }: { data: DatasetNodeData }) => (
                 left: '-4px',
               }}
             />
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontWeight: 500 }}>{col.name}</span>
-                {col.isPrimaryKey && (
-                  <span style={{ fontSize: '10px', opacity: 0.8 }}>🔑</span>
-                )}
-                {col.isForeignKey && (
-                  <span style={{ fontSize: '10px', opacity: 0.8 }}>🔗</span>
-                )}
+            <div className="column-content">
+              <div className="column-name-row">
+                <span className="column-name">{col.name}</span>
+                <div className="column-icons">
+                  {col.isPrimaryKey && <span className="key-icon">🔑</span>}
+                  {col.isForeignKey && <span className="link-icon">🔗</span>}
+                </div>
               </div>
-              <span
-                style={{
-                  opacity: 0.7,
-                  fontSize: '10px',
-                  fontFamily: 'monospace',
-                }}
-              >
-                {col.dataType}
-              </span>
+              <span className="column-type">{col.dataType}</span>
             </div>
             {hasTags && (
-              <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+              <div className="column-tags">
                 {col.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    style={{
-                      marginRight: '4px',
-                      padding: '1px 4px',
-                      background: isSelected || isInLineage ? 'rgba(255,255,255,0.2)' : '#e5e7eb',
-                      borderRadius: '2px',
-                    }}
-                  >
+                  <span key={tag} className="tag-badge">
                     {tag}
                   </span>
                 ))}
@@ -236,6 +156,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
             datasetId: dataset.id,
             datasetName: dataset.data.dp_name,
             datasetType: dataset.type,
+            portType: dataset.data.port_type,
             columns: dataset.data.columns,
             schema: dataset.data.schema,
             tags: dataset.data.tags,
