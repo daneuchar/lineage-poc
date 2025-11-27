@@ -65,19 +65,21 @@ const DatasetNode = ({ data }: { data: DatasetNodeData }) => (
             onClick={() => data.onColumnSelect?.(isSelected ? null : col.id)}
             className={`column-item ${isSelected ? 'selected' : ''} ${isInLineage ? 'in-lineage' : ''}`}
           >
-            {/* Target handle for incoming connections (left side) */}
-            <Handle
-              type="target"
-              position={Position.Left}
-              id={col.id}
-              style={{
-                width: '8px',
-                height: '8px',
-                background: '#6b7280',
-                border: '2px solid white',
-                left: '-4px',
-              }}
-            />
+            {/* Target handle for incoming connections (left side) - show if has sourceColumns */}
+            {col.sourceColumns && col.sourceColumns.length > 0 && (
+              <Handle
+                type="target"
+                position={Position.Left}
+                id={col.id}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  background: '#6b7280',
+                  border: '2px solid white',
+                  left: '-4px',
+                }}
+              />
+            )}
             <div className="column-content">
               <div className="column-name-row">
                 <span className="column-name">{col.name}</span>
@@ -97,8 +99,8 @@ const DatasetNode = ({ data }: { data: DatasetNodeData }) => (
                 ))}
               </div>
             )}
-            {/* Source handle for outgoing connections (right side) */}
-            {col.relatedColumns && col.relatedColumns.length > 0 && (
+            {/* Source handle for outgoing connections (right side) - show if has targetColumns */}
+            {col.targetColumns && col.targetColumns.length > 0 && (
               <Handle
                 type="source"
                 position={Position.Right}
@@ -204,22 +206,21 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
     const datasetConnections = new Set<string>();
     const edges: ReactFlowEdge[] = [];
 
-    datasets.forEach((sourceDataset) => {
-      sourceDataset.data.columns.forEach((sourceCol) => {
-        sourceCol.relatedColumns?.forEach((targetColId) => {
-          // Find target dataset
+    datasets.forEach((dataset) => {
+      dataset.data.columns.forEach((col) => {
+        // Build edges from targetColumns (right edges - outgoing)
+        col.targetColumns?.forEach((targetColId) => {
           const targetDataset = datasets.find((d) =>
-            d.data.columns.some((col) => col.id === targetColId)
+            d.data.columns.some((c) => c.id === targetColId)
           );
 
           if (targetDataset) {
-            const connectionKey = `${sourceDataset.id}-${targetDataset.id}`;
-            // Only add one edge per dataset pair for layout
+            const connectionKey = `${dataset.id}-${targetDataset.id}`;
             if (!datasetConnections.has(connectionKey)) {
               datasetConnections.add(connectionKey);
               edges.push({
                 id: connectionKey,
-                source: sourceDataset.id,
+                source: dataset.id,
                 target: targetDataset.id,
                 type: 'default',
               });
@@ -232,23 +233,23 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
     return edges;
   }, []);
 
-  // Build edges from relatedColumns in datasets
+  // Build edges from sourceColumns and targetColumns in datasets
   const buildEdgesFromRelatedColumns = useCallback((datasets: ColumnLineageTable[]): ReactFlowEdge[] => {
     const edges: ReactFlowEdge[] = [];
 
-    datasets.forEach((sourceDataset) => {
-      sourceDataset.data.columns.forEach((sourceCol) => {
-        sourceCol.relatedColumns?.forEach((targetColId) => {
-          // Find target dataset
+    datasets.forEach((dataset) => {
+      dataset.data.columns.forEach((col) => {
+        // Build edges from targetColumns (right edges - outgoing)
+        col.targetColumns?.forEach((targetColId) => {
           const targetDataset = datasets.find((d) =>
-            d.data.columns.some((col) => col.id === targetColId)
+            d.data.columns.some((c) => c.id === targetColId)
           );
 
           if (targetDataset) {
             edges.push({
-              id: `${sourceCol.id}-${targetColId}`,
-              source: sourceDataset.id,
-              sourceHandle: sourceCol.id,
+              id: `${col.id}-${targetColId}`,
+              source: dataset.id,
+              sourceHandle: col.id,
               target: targetDataset.id,
               targetHandle: targetColId,
               type: 'default',
@@ -275,20 +276,20 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         visited.add(colId);
         lineage.add(colId);
 
-        // Find downstream (via relatedColumns)
+        // Find downstream (via targetColumns)
         datasetData.datasets.forEach((dataset) => {
           dataset.data.columns.forEach((col) => {
-            if (col.id === colId && col.relatedColumns) {
-              col.relatedColumns.forEach(traverse);
+            if (col.id === colId && col.targetColumns) {
+              col.targetColumns.forEach(traverse);
             }
           });
         });
 
-        // Find upstream (columns that have this column in their relatedColumns)
+        // Find upstream (via sourceColumns)
         datasetData.datasets.forEach((dataset) => {
           dataset.data.columns.forEach((col) => {
-            if (col.relatedColumns?.includes(colId)) {
-              traverse(col.id);
+            if (col.id === colId && col.sourceColumns) {
+              col.sourceColumns.forEach(traverse);
             }
           });
         });

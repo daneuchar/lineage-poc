@@ -135,21 +135,23 @@ export interface ColumnLineageColumn {
   id: string;
   name: string;
   dataType: string;
-  nullable: boolean;
-  isPrimaryKey: boolean;
-  isForeignKey: boolean;
+  nullable?: boolean;
+  isPrimaryKey?: boolean;
+  isForeignKey?: boolean;
   description?: string;
   tags?: string[];
-  relatedColumns?: string[]; // IDs of related columns in other tables
+  sourceColumns?: string[]; // IDs of upstream columns (left edge - incoming)
+  targetColumns?: string[]; // IDs of downstream columns (right edge - outgoing)
 }
 
 export interface ColumnLineageTableData {
+  env?: string; // environment
   dp_name: string;
   port_type?: 'input' | 'output';
   dp_id: string;
   port_id?: string;
   port_name?: string;
-  schema?: string; // URL
+  schema?: string; // table name
   tags?: string[];
   columns: ColumnLineageColumn[];
 }

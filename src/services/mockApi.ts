@@ -30,6 +30,7 @@ async function getFlowData(): Promise<FlowData> {
         {
           id: 'dataproduct-1',
           type: 'dataproduct',
+              env: 'production', // environment
           position: { x: 0, y: 0 },
           data: {
             label: 'WMA Account',
@@ -221,23 +222,25 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
           id: 'table-1',
           type: 'dataset',
           data: {
+            env: 'production', // environment
             dp_name: 'Customer Raw Data',
-            port_type: 'input',
-            dp_id: 'dp-raw-customers',
+            port_type: 'input', // input or output
+            dp_id: 'dp-raw-customers', 
             port_id: 'port-extract-001',
             port_name: 'Customer Data Extract',
-            schema: '/raw_data/customers',
-            tags: ['pii', 'customer', 'raw'],
+            schema: '/raw_data/customers', //table name 
+            tags: ['pii', 'customer', 'raw'], // optional
             columns: [
               {
                 id: 'table-1-col-1',
                 name: 'customer_id',
                 dataType: 'INTEGER',
-                nullable: false,
-                isPrimaryKey: true,
-                isForeignKey: false,
-                description: 'Unique customer identifier',
-                relatedColumns: ['table-3-col-1'], // → Customer Orders Staging
+                nullable: false, // optional
+                isPrimaryKey: true, // optional
+                isForeignKey: false, // optional
+                description: 'Unique customer identifier', // optional
+                sourceColumns: ['table-3-col-1'], // → left edge 
+                targetColumns: ['table-4-col-1'], // → right edge 
               },
               {
                 id: 'table-1-col-2',
@@ -248,7 +251,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isForeignKey: false,
                 description: 'Customer first name',
                 tags: ['pii'],
-                relatedColumns: ['table-3-col-2'], // → full_name (concatenated)
+                targetColumns: ['table-3-col-2'], // → full_name (concatenated)
               },
               {
                 id: 'table-1-col-3',
@@ -259,7 +262,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isForeignKey: false,
                 description: 'Customer last name',
                 tags: ['pii'],
-                relatedColumns: ['table-3-col-2'], // → full_name (concatenated)
+                targetColumns: ['table-3-col-2'], // → full_name (concatenated)
               },
               {
                 id: 'table-1-col-4',
@@ -270,7 +273,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isForeignKey: false,
                 description: 'Customer email address',
                 tags: ['pii', 'contact'],
-                relatedColumns: ['table-3-col-3'], // → email
+                targetColumns: ['table-3-col-3'], // → email
               },
               {
                 id: 'table-1-col-5',
@@ -289,7 +292,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'ISO country code',
-                relatedColumns: ['table-3-col-8'], // → country_code
+                targetColumns: ['table-3-col-8'], // → country_code
               },
             ],
           },
@@ -298,6 +301,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
           id: 'table-2',
           type: 'dataset',
           data: {
+            env: 'production',
             dp_name: 'Orders Raw Data',
             port_type: 'input',
             dp_id: 'dp-raw-orders',
@@ -314,7 +318,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: true,
                 isForeignKey: false,
                 description: 'Unique order identifier',
-                relatedColumns: ['table-3-col-4'], // → total_orders (aggregated)
+                targetColumns: ['table-3-col-4'], // → total_orders (aggregated)
               },
               {
                 id: 'table-2-col-2',
@@ -333,7 +337,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Total order amount',
-                relatedColumns: ['table-3-col-5'], // → total_spent (aggregated)
+                targetColumns: ['table-3-col-5'], // → total_spent (aggregated)
               },
               {
                 id: 'table-2-col-4',
@@ -343,7 +347,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Order placement date',
-                relatedColumns: ['table-3-col-6', 'table-3-col-7'], // → first/last order date
+                targetColumns: ['table-3-col-6', 'table-3-col-7'], // → first/last order date
               },
               {
                 id: 'table-2-col-5',
@@ -361,6 +365,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
           id: 'table-3',
           type: 'dataset',
           data: {
+            env: 'staging',
             dp_name: 'Customer Orders Staging',
             port_type: 'output',
             dp_id: 'dp-staging-customer-orders',
@@ -377,7 +382,8 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: true,
                 isForeignKey: false,
                 description: 'Customer identifier',
-                relatedColumns: ['table-4-col-1'], // → Customer Analytics
+                sourceColumns: ['table-1-col-1'],
+                targetColumns: ['table-4-col-1'], // → Customer Analytics
               },
               {
                 id: 'table-3-col-2',
@@ -388,7 +394,8 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isForeignKey: false,
                 description: 'Customer full name',
                 tags: ['pii'],
-                relatedColumns: ['table-4-col-2'], // → customer_name
+                sourceColumns: ['table-1-col-2', 'table-1-col-3'],
+                targetColumns: ['table-4-col-2'], // → customer_name
               },
               {
                 id: 'table-3-col-3',
@@ -399,7 +406,8 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isForeignKey: false,
                 description: 'Customer email',
                 tags: ['pii', 'contact'],
-                relatedColumns: ['table-4-col-3'], // → email
+                sourceColumns: ['table-1-col-4'],
+                targetColumns: ['table-4-col-3'], // → email
               },
               {
                 id: 'table-3-col-4',
@@ -409,7 +417,8 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Total number of orders',
-                relatedColumns: ['table-4-col-6', 'table-4-col-8'], // → order_count, avg_order_value
+                sourceColumns: ['table-2-col-1'],
+                targetColumns: ['table-4-col-6', 'table-4-col-8'], // → order_count, avg_order_value
               },
               {
                 id: 'table-3-col-5',
@@ -419,7 +428,8 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Total amount spent',
-                relatedColumns: ['table-4-col-4', 'table-4-col-5', 'table-4-col-8'], // → lifetime_value, segment, avg
+                sourceColumns: ['table-2-col-3'],
+                targetColumns: ['table-4-col-4', 'table-4-col-5', 'table-4-col-8'], // → lifetime_value, segment, avg
               },
               {
                 id: 'table-3-col-6',
@@ -429,7 +439,8 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Date of first order',
-                relatedColumns: ['table-4-col-7'], // → tenure_days
+                sourceColumns: ['table-2-col-4'],
+                targetColumns: ['table-4-col-7'], // → tenure_days
               },
               {
                 id: 'table-3-col-7',
@@ -439,6 +450,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Date of last order',
+                sourceColumns: ['table-2-col-4'],
               },
               {
                 id: 'table-3-col-8',
@@ -448,7 +460,8 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Customer country',
-                relatedColumns: ['table-4-col-9'], // → country_code
+                sourceColumns: ['table-1-col-6'],
+                targetColumns: ['table-4-col-9'], // → country_code
               },
             ],
           },
@@ -457,8 +470,9 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
           id: 'table-4',
           type: 'dataset',
           data: {
+            env: 'production',
             dp_name: 'Customer Analytics Mart',
-            port_type: 'output',
+            port_type: 'input',
             dp_id: 'dp-mart-customer-analytics',
             port_id: 'port-analytics-001',
             port_name: 'Customer Analytics Processing',
@@ -473,6 +487,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: true,
                 isForeignKey: false,
                 description: 'Customer identifier',
+                sourceColumns: ['table-3-col-1'],
               },
               {
                 id: 'table-4-col-2',
@@ -483,6 +498,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isForeignKey: false,
                 description: 'Customer full name',
                 tags: ['pii'],
+                sourceColumns: ['table-3-col-2'],
               },
               {
                 id: 'table-4-col-3',
@@ -493,6 +509,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isForeignKey: false,
                 description: 'Customer email',
                 tags: ['pii', 'contact'],
+                sourceColumns: ['table-3-col-3'],
               },
               {
                 id: 'table-4-col-4',
@@ -502,6 +519,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Customer lifetime value',
+                sourceColumns: ['table-3-col-5'],
               },
               {
                 id: 'table-4-col-5',
@@ -511,6 +529,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Customer segmentation category',
+                sourceColumns: ['table-3-col-5'],
               },
               {
                 id: 'table-4-col-6',
@@ -520,6 +539,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Total number of orders',
+                sourceColumns: ['table-3-col-4'],
               },
               {
                 id: 'table-4-col-7',
@@ -529,6 +549,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Customer tenure in days',
+                sourceColumns: ['table-3-col-6'],
               },
               {
                 id: 'table-4-col-8',
@@ -538,6 +559,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Average order value',
+                sourceColumns: ['table-3-col-4', 'table-3-col-5'],
               },
               {
                 id: 'table-4-col-9',
@@ -547,6 +569,7 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
                 isPrimaryKey: false,
                 isForeignKey: false,
                 description: 'Customer country',
+                sourceColumns: ['table-3-col-8'],
               },
             ],
           },
