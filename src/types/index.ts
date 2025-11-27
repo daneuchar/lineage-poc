@@ -145,18 +145,18 @@ export interface ColumnLineageColumn {
 
 export interface ColumnLineageTableData {
   dp_name: string;
+  port_type?: 'input' | 'output';
   dp_id: string;
-  op_id?: string;
-  op_name?: string;
+  port_id?: string;
+  port_name?: string;
   schema?: string; // URL
-  owner?: string;
   tags?: string[];
   columns: ColumnLineageColumn[];
 }
 
 export interface ColumnLineageTable {
   id: string;
-  type?: 'source' | 'transformation' | 'mart';
+  type?: 'dataset';
   data: ColumnLineageTableData;
 }
 

@@ -78,8 +78,8 @@ const getNodeWidth = (
     const isExpanded = expandedNodes[node.id];
     return isExpanded ? 420 : 120;
   }
-  if (node.type === 'table') {
-    return 320; // Fixed width for table nodes (matches minWidth: 280px + padding)
+  if (node.type === 'table' || node.type === 'dataset') {
+    return 320; // Fixed width for dataset nodes (matches minWidth: 280px + padding)
   }
   return 150; // Default width
 };
@@ -115,21 +115,19 @@ const getNodeHeight = (
     const paginationHeight = needsPagination ? 36 : 0;
     return 100 + maxVisiblePorts * 28 + paginationHeight;
   }
-  if (node.type === 'table') {
-    // Calculate height based on number of columns in the table node
-    const tableData = node.data as any; // TableNodeData from ColumnLineageCanvas
+  if (node.type === 'table' || node.type === 'dataset') {
+    // Calculate height based on number of columns in the dataset node
+    const tableData = node.data as any; // DatasetNodeData from ColumnLineageCanvas
     const columnCount = tableData.columns?.length || 0;
 
-    // Header section: title (20px) + tableType (19px) + schema (18px) + spacing (24px) = ~61px
+    // Header section: title (20px) + datasetType (19px) + schema (18px) + spacing (24px) = ~61px
     // Border and divider: 9px
     // Each column item: ~35px (padding 6px*2 + font 12px + border + margin)
-    // Owner footer: 34px (if present)
 
     const headerHeight = 70; // header + borders
     const columnItemHeight = 35;
-    const ownerHeight = tableData.owner ? 34 : 0;
 
-    return headerHeight + (columnCount * columnItemHeight) + ownerHeight;
+    return headerHeight + (columnCount * columnItemHeight);
   }
   return 100; // Default height
 };

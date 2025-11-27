@@ -219,14 +219,14 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
       datasets: [
         {
           id: 'table-1',
-          type: 'source',
+          type: 'dataset',
           data: {
             dp_name: 'Customer Raw Data',
+            port_type: 'input',
             dp_id: 'dp-raw-customers',
-            op_id: 'op-extract-001',
-            op_name: 'Customer Data Extract',
+            port_id: 'port-extract-001',
+            port_name: 'Customer Data Extract',
             schema: '/raw_data/customers',
-            owner: 'data-engineering@company.com',
             tags: ['pii', 'customer', 'raw'],
             columns: [
               {
@@ -296,14 +296,14 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
         },
         {
           id: 'table-2',
-          type: 'source',
+          type: 'dataset',
           data: {
             dp_name: 'Orders Raw Data',
+            port_type: 'input',
             dp_id: 'dp-raw-orders',
-            op_id: 'op-extract-002',
-            op_name: 'Orders Data Extract',
+            port_id: 'port-extract-002',
+            port_name: 'Orders Data Extract',
             schema: '/raw_data/orders',
-            owner: 'data-engineering@company.com',
             tags: ['transactional', 'orders', 'raw'],
             columns: [
               {
@@ -359,14 +359,14 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
         },
         {
           id: 'table-3',
-          type: 'transformation',
+          type: 'dataset',
           data: {
             dp_name: 'Customer Orders Staging',
+            port_type: 'output',
             dp_id: 'dp-staging-customer-orders',
-            op_id: 'op-transform-001',
-            op_name: 'Customer Orders ETL',
+            port_id: 'port-transform-001',
+            port_name: 'Customer Orders ETL',
             schema: '/staging/customer_orders',
-            owner: 'analytics-team@company.com',
             tags: ['staging', 'customer-orders', 'aggregated'],
             columns: [
               {
@@ -455,14 +455,14 @@ async function getTableColumnLineage(): Promise<import('../types').ColumnLineage
         },
         {
           id: 'table-4',
-          type: 'mart',
+          type: 'dataset',
           data: {
             dp_name: 'Customer Analytics Mart',
+            port_type: 'output',
             dp_id: 'dp-mart-customer-analytics',
-            op_id: 'op-analytics-001',
-            op_name: 'Customer Analytics Processing',
+            port_id: 'port-analytics-001',
+            port_name: 'Customer Analytics Processing',
             schema: '/mart/customer_analytics',
-            owner: 'analytics-team@company.com',
             tags: ['mart', 'customer-analytics', 'business-ready'],
             columns: [
               {

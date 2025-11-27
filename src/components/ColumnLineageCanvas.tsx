@@ -22,14 +22,13 @@ import type {
   ColumnLineageColumn,
 } from '../types';
 
-// Simple table node component (inline for now)
-interface TableNodeData extends Record<string, unknown> {
-  tableId: string;
-  tableName: string;
-  tableType?: string;
+// Simple dataset node component (inline for now)
+interface DatasetNodeData extends Record<string, unknown> {
+  datasetId: string;
+  datasetName: string;
+  datasetType?: string;
   columns: ColumnLineageColumn[];
   schema?: string;
-  owner?: string;
   tags?: string[];
   onColumnSelect?: (columnId: string | null) => void;
   onVisibleColumnsChange?: (visibleColumnIds: string[]) => void;
@@ -37,7 +36,7 @@ interface TableNodeData extends Record<string, unknown> {
   lineageColumns?: Set<string>;
 }
 
-const TableNode = ({ data }: { data: TableNodeData }) => (
+const DatasetNode = ({ data }: { data: DatasetNodeData }) => (
   <div
     style={{
       background: 'white',
@@ -56,9 +55,9 @@ const TableNode = ({ data }: { data: TableNodeData }) => (
         color: '#1f2937',
       }}
     >
-      {data.tableName}
+      {data.datasetName}
     </div>
-    {data.tableType && (
+    {data.datasetType && (
       <div
         style={{
           fontSize: '11px',
@@ -68,7 +67,7 @@ const TableNode = ({ data }: { data: TableNodeData }) => (
           fontWeight: 500,
         }}
       >
-        {data.tableType}
+        {data.datasetType}
       </div>
     )}
     {data.schema && (
@@ -197,24 +196,11 @@ const TableNode = ({ data }: { data: TableNodeData }) => (
         );
       })}
     </div>
-    {data.owner && (
-      <div
-        style={{
-          fontSize: '10px',
-          color: '#9ca3af',
-          marginTop: '8px',
-          paddingTop: '8px',
-          borderTop: '1px solid #e5e7eb',
-        }}
-      >
-        👤 {data.owner}
-      </div>
-    )}
   </div>
 );
 
 const nodeTypes = {
-  table: TableNode,
+  dataset: DatasetNode,
 };
 
 interface ColumnLineageCanvasProps {
@@ -223,37 +209,36 @@ interface ColumnLineageCanvasProps {
 
 function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
   const { fitView } = useReactFlow();
-  const [nodes, setNodes, onNodesChange] = useNodesState<ReactFlowNode<TableNodeData>>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<ReactFlowNode<DatasetNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<ReactFlowEdge>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
   const [lineageColumns, setLineageColumns] = useState<Set<string>>(new Set());
-  const [tableData, setTableData] = useState<ColumnLineageData | null>(null);
+  const [datasetData, setDatasetData] = useState<ColumnLineageData | null>(null);
 
-  // Load table column lineage data from API
+  // Load dataset column lineage data from API
   useEffect(() => {
-    const loadTableColumnLineage = async () => {
+    const loadDatasetColumnLineage = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await mockApi.getTableColumnLineage();
-        console.log('Table column lineage data:', data);
-        setTableData(data);
+        console.log('Dataset column lineage data:', data);
+        setDatasetData(data);
 
         // Build nodes from datasets
-        const newNodes: ReactFlowNode<TableNodeData>[] = data.datasets.map((table) => ({
-          id: table.id,
-          type: 'table',
+        const newNodes: ReactFlowNode<DatasetNodeData>[] = data.datasets.map((dataset) => ({
+          id: dataset.id,
+          type: 'dataset',
           position: { x: 0, y: 0 }, // Will be calculated by layout
           data: {
-            tableId: table.id,
-            tableName: table.data.dp_name,
-            tableType: table.type,
-            columns: table.data.columns,
-            schema: table.data.schema,
-            owner: table.data.owner,
-            tags: table.data.tags,
+            datasetId: dataset.id,
+            datasetName: dataset.data.dp_name,
+            datasetType: dataset.type,
+            columns: dataset.data.columns,
+            schema: dataset.data.schema,
+            tags: dataset.data.tags,
           },
         }));
 
@@ -275,46 +260,46 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
       }
     };
 
-    loadTableColumnLineage();
+    loadDatasetColumnLineage();
   }, [setNodes, setEdges]);
 
-  // Helper function to find table ID for a column ID
-  const getTableIdForColumn = useCallback(
+  // Helper function to find dataset ID for a column ID
+  const getDatasetIdForColumn = useCallback(
     (columnId: string): string | null => {
-      if (!tableData) return null;
+      if (!datasetData) return null;
 
-      for (const table of tableData.datasets) {
-        if (table.data.columns.some((col) => col.id === columnId)) {
-          return table.id;
+      for (const dataset of datasetData.datasets) {
+        if (dataset.data.columns.some((col) => col.id === columnId)) {
+          return dataset.id;
         }
       }
       return null;
     },
-    [tableData]
+    [datasetData]
   );
 
-  // Build layout-only edges (table to table, without handles) for Dagre layout algorithm
-  const buildLayoutEdges = useCallback((tables: ColumnLineageTable[]): ReactFlowEdge[] => {
-    const tableConnections = new Set<string>();
+  // Build layout-only edges (dataset to dataset, without handles) for Dagre layout algorithm
+  const buildLayoutEdges = useCallback((datasets: ColumnLineageTable[]): ReactFlowEdge[] => {
+    const datasetConnections = new Set<string>();
     const edges: ReactFlowEdge[] = [];
 
-    tables.forEach((sourceTable) => {
-      sourceTable.data.columns.forEach((sourceCol) => {
+    datasets.forEach((sourceDataset) => {
+      sourceDataset.data.columns.forEach((sourceCol) => {
         sourceCol.relatedColumns?.forEach((targetColId) => {
-          // Find target table
-          const targetTable = tables.find((t) =>
-            t.data.columns.some((col) => col.id === targetColId)
+          // Find target dataset
+          const targetDataset = datasets.find((d) =>
+            d.data.columns.some((col) => col.id === targetColId)
           );
 
-          if (targetTable) {
-            const connectionKey = `${sourceTable.id}-${targetTable.id}`;
-            // Only add one edge per table pair for layout
-            if (!tableConnections.has(connectionKey)) {
-              tableConnections.add(connectionKey);
+          if (targetDataset) {
+            const connectionKey = `${sourceDataset.id}-${targetDataset.id}`;
+            // Only add one edge per dataset pair for layout
+            if (!datasetConnections.has(connectionKey)) {
+              datasetConnections.add(connectionKey);
               edges.push({
                 id: connectionKey,
-                source: sourceTable.id,
-                target: targetTable.id,
+                source: sourceDataset.id,
+                target: targetDataset.id,
                 type: 'default',
               });
             }
@@ -326,24 +311,24 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
     return edges;
   }, []);
 
-  // Build edges from relatedColumns in tables
-  const buildEdgesFromRelatedColumns = useCallback((tables: ColumnLineageTable[]): ReactFlowEdge[] => {
+  // Build edges from relatedColumns in datasets
+  const buildEdgesFromRelatedColumns = useCallback((datasets: ColumnLineageTable[]): ReactFlowEdge[] => {
     const edges: ReactFlowEdge[] = [];
 
-    tables.forEach((sourceTable) => {
-      sourceTable.data.columns.forEach((sourceCol) => {
+    datasets.forEach((sourceDataset) => {
+      sourceDataset.data.columns.forEach((sourceCol) => {
         sourceCol.relatedColumns?.forEach((targetColId) => {
-          // Find target table
-          const targetTable = tables.find((t) =>
-            t.data.columns.some((col) => col.id === targetColId)
+          // Find target dataset
+          const targetDataset = datasets.find((d) =>
+            d.data.columns.some((col) => col.id === targetColId)
           );
 
-          if (targetTable) {
+          if (targetDataset) {
             edges.push({
               id: `${sourceCol.id}-${targetColId}`,
-              source: sourceTable.id,
+              source: sourceDataset.id,
               sourceHandle: sourceCol.id,
-              target: targetTable.id,
+              target: targetDataset.id,
               targetHandle: targetColId,
               type: 'default',
               style: { strokeWidth: 2, stroke: '#9ca3af' },
@@ -359,7 +344,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
   // Find complete lineage for a column (upstream + downstream)
   const findColumnLineage = useCallback(
     (columnId: string): Set<string> => {
-      if (!tableData) return new Set();
+      if (!datasetData) return new Set();
 
       const lineage = new Set<string>();
       const visited = new Set<string>();
@@ -370,8 +355,8 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         lineage.add(colId);
 
         // Find downstream (via relatedColumns)
-        tableData.datasets.forEach((table) => {
-          table.data.columns.forEach((col) => {
+        datasetData.datasets.forEach((dataset) => {
+          dataset.data.columns.forEach((col) => {
             if (col.id === colId && col.relatedColumns) {
               col.relatedColumns.forEach(traverse);
             }
@@ -379,8 +364,8 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
         });
 
         // Find upstream (columns that have this column in their relatedColumns)
-        tableData.datasets.forEach((table) => {
-          table.data.columns.forEach((col) => {
+        datasetData.datasets.forEach((dataset) => {
+          dataset.data.columns.forEach((col) => {
             if (col.relatedColumns?.includes(colId)) {
               traverse(col.id);
             }
@@ -391,14 +376,14 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
       traverse(columnId);
       return lineage;
     },
-    [tableData]
+    [datasetData]
   );
 
   // Rebuild edges with lineage highlighting
   const rebuildEdges = useCallback(() => {
-    if (!tableData) return;
+    if (!datasetData) return;
 
-    const builtEdges = buildEdgesFromRelatedColumns(tableData.datasets);
+    const builtEdges = buildEdgesFromRelatedColumns(datasetData.datasets);
     const hasLineage = lineageColumns.size > 0;
 
     const styledEdges = builtEdges.map((edge) => {
@@ -420,7 +405,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
     });
 
     setEdges(styledEdges);
-  }, [tableData, lineageColumns, buildEdgesFromRelatedColumns, setEdges]);
+  }, [datasetData, lineageColumns, buildEdgesFromRelatedColumns, setEdges]);
 
   // Update edges when lineage changes
   useEffect(() => {
@@ -525,9 +510,9 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
           </button>
         )}
         <h2 className="column-lineage-title">Column Lineage</h2>
-        {selectedColumn && tableData && (
+        {selectedColumn && datasetData && (
           <div style={{ fontSize: '14px', color: '#6b7280', marginLeft: 'auto' }}>
-            Selected: {getColumnName(selectedColumn, tableData.datasets)} ({lineageColumns.size}{' '}
+            Selected: {getColumnName(selectedColumn, datasetData.datasets)} ({lineageColumns.size}{' '}
             columns in lineage)
           </div>
         )}
@@ -556,11 +541,11 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
 }
 
 // Helper to get column name for display
-function getColumnName(columnId: string, tables: ColumnLineageTable[]): string {
-  for (const table of tables) {
-    const column = table.data.columns.find((col) => col.id === columnId);
+function getColumnName(columnId: string, datasets: ColumnLineageTable[]): string {
+  for (const dataset of datasets) {
+    const column = dataset.data.columns.find((col) => col.id === columnId);
     if (column) {
-      return `${table.data.dp_name}.${column.name}`;
+      return `${dataset.data.dp_name}.${column.name}`;
     }
   }
   return columnId;
