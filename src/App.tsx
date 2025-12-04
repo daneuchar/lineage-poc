@@ -6,7 +6,7 @@ import './styles/index.css';
 import type { ViewMode } from './types';
 
 function App() {
-  const [viewMode, setViewMode] = useState<ViewMode>('port');
+  const [viewMode, setViewMode] = useState<ViewMode>('column');
   const [selectedPortForColumns, setSelectedPortForColumns] = useState<string | null>(null);
 
   const handleViewColumnLineage = (portId: string) => {

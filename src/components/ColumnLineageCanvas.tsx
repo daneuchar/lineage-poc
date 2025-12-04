@@ -134,6 +134,20 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
     },
   }));
 
+  const onError = useCallback((code: string, message: string) => {
+    // Suppress error #008 (handle not found) during pagination
+    // This can happen temporarily while React Flow processes handle updates
+    if (code === "008") {
+      console.debug(
+        "Handle temporarily unavailable during pagination:",
+        message
+      );
+      return;
+    }
+    // Log other errors normally
+    console.error(`React Flow Error ${code}:`, message);
+  }, []);
+
   if (loading) {
     return (
       <div className="column-lineage-container">
@@ -206,6 +220,7 @@ function ColumnLineageCanvas({ onBack }: ColumnLineageCanvasProps) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          onError={onError}
           defaultEdgeOptions={{
             type: 'default',
             animated: false,
