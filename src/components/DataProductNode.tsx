@@ -16,6 +16,7 @@ import {
   ExpandMoreOutlined,
   MoreVert,
 } from "@mui/icons-material";
+import { sortPortsWithLineage } from "../utils/portUtils";
 
 function DataProductNode({ id, data, selected }: NodeProps) {
   const nodeData = data as DataProductNodeData;
@@ -175,30 +176,16 @@ function DataProductNode({ id, data, selected }: NodeProps) {
     setRelatedPorts([]);
   }, [nodeData.lineagePorts, inputs, outputs]);
 
-  // Sort ports so lineage ports appear first - memoized to prevent unnecessary recalculations
-  const sortedInputs = useMemo(() => {
-    return [...inputs].sort((a, b) => {
-      const aIsInLineage =
-        nodeData.lineagePorts && nodeData.lineagePorts.has(a.id);
-      const bIsInLineage =
-        nodeData.lineagePorts && nodeData.lineagePorts.has(b.id);
-      if (aIsInLineage && !bIsInLineage) return -1;
-      if (!aIsInLineage && bIsInLineage) return 1;
-      return 0;
-    });
-  }, [inputs, nodeData.lineagePorts]);
+  // Sort ports so lineage ports appear first, but keep selected port in original position
+  const sortedInputs = useMemo(
+    () => sortPortsWithLineage(inputs, nodeData.lineagePorts, selectedPortId),
+    [inputs, nodeData.lineagePorts, selectedPortId]
+  );
 
-  const sortedOutputs = useMemo(() => {
-    return [...outputs].sort((a, b) => {
-      const aIsInLineage =
-        nodeData.lineagePorts && nodeData.lineagePorts.has(a.id);
-      const bIsInLineage =
-        nodeData.lineagePorts && nodeData.lineagePorts.has(b.id);
-      if (aIsInLineage && !bIsInLineage) return -1;
-      if (!aIsInLineage && bIsInLineage) return 1;
-      return 0;
-    });
-  }, [outputs, nodeData.lineagePorts]);
+  const sortedOutputs = useMemo(
+    () => sortPortsWithLineage(outputs, nodeData.lineagePorts, selectedPortId),
+    [outputs, nodeData.lineagePorts, selectedPortId]
+  );
 
   // Calculate dynamic pagination based on available space
   const itemsPerPage = getMaxItemsPerSection();
