@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Handle, Position, NodeResizer } from '@xyflow/react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Handle, Position, NodeResizer, useUpdateNodeInternals } from '@xyflow/react';
 import type { NodeProps } from '@xyflow/react';
 import type { ColumnLineageColumn } from '../types';
 import '../styles/dataset-node.css';
@@ -28,10 +28,11 @@ const DEFAULT_COLUMNS_PER_PAGE = 5;
 // Calculate minimum height needed to show MIN_COLUMNS_TO_SHOW columns
 const MIN_NODE_HEIGHT = HEADER_HEIGHT + (MIN_COLUMNS_TO_SHOW * COLUMN_ITEM_HEIGHT) + PAGINATION_HEIGHT;
 
-export const DatasetNode = ({ data, selected }: NodeProps<DatasetNodeData>) => {
+export const DatasetNode = ({ data, selected, id }: NodeProps<DatasetNodeData>) => {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [nodeHeight, setNodeHeight] = useState<number>(0);
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const totalColumns = data.columns.length;
 
@@ -47,12 +48,44 @@ export const DatasetNode = ({ data, selected }: NodeProps<DatasetNodeData>) => {
   }, [totalColumns]);
 
   const columnsPerPage = calculateColumnsPerPage(nodeHeight);
+
+  // Check if this node contains the selected column
+  const hasSelectedColumn = useMemo(() => {
+    return data.columns.some((col) => col.id === data.selectedColumnId);
+  }, [data.columns, data.selectedColumnId]);
+
+  // Sort columns: lineage columns first, then others (only for related nodes, not the selected node)
+  const sortedColumns = useMemo(() => {
+    // If this node has the selected column, don't sort - keep original order
+    if (hasSelectedColumn) {
+      return data.columns;
+    }
+
+    // For related nodes, sort lineage columns to the top
+    if (!data.lineageColumns || data.lineageColumns.size === 0) {
+      return data.columns;
+    }
+
+    const lineageColumns: ColumnLineageColumn[] = [];
+    const otherColumns: ColumnLineageColumn[] = [];
+
+    data.columns.forEach((col) => {
+      if (data.lineageColumns?.has(col.id)) {
+        lineageColumns.push(col);
+      } else {
+        otherColumns.push(col);
+      }
+    });
+
+    return [...lineageColumns, ...otherColumns];
+  }, [data.columns, data.lineageColumns, hasSelectedColumn]);
+
   const totalPages = Math.ceil(totalColumns / columnsPerPage);
 
   // Calculate visible columns based on current page and dynamic columns per page
   const startIndex = (currentPage - 1) * columnsPerPage;
   const endIndex = startIndex + columnsPerPage;
-  const visibleColumns = data.columns.slice(startIndex, endIndex);
+  const visibleColumns = sortedColumns.slice(startIndex, endIndex);
 
   // Track node height changes using ResizeObserver
   useEffect(() => {
@@ -71,6 +104,17 @@ export const DatasetNode = ({ data, selected }: NodeProps<DatasetNodeData>) => {
       resizeObserver.disconnect();
     };
   }, []);
+
+  // Reset to page 1 when lineage changes (only for related nodes, not selected node)
+  useEffect(() => {
+    if (data.lineageColumns && data.lineageColumns.size > 0 && !hasSelectedColumn) {
+      setCurrentPage(1);
+      // Update node internals to refresh handles after sorting
+      if (id) {
+        setTimeout(() => updateNodeInternals(id), 0);
+      }
+    }
+  }, [data.lineageColumns, hasSelectedColumn, id, updateNodeInternals]);
 
   // Reset to page 1 when columns per page changes (due to resize)
   useEffect(() => {
